@@ -20,18 +20,27 @@ Assets/
 │       ├── Core/                 # Foundational architecture patterns
 │       │   ├── GameEvents.cs     # Global decoupled event bus
 │       │   └── GameState.cs      # High-level game state enum
+│       ├── Data/                 # ScriptableObjects definition
+│       │   ├── BallDataSO.cs     # Tier properties (size, color, score)
+│       │   └── LevelDataSO.cs    # Level bounds, tiers pool, drop rules
 │       ├── Managers/             # Central game controllers & services
 │       │   ├── DependencyManager.cs # Service locator / DI container
 │       │   ├── GameManager.cs       # Master game lifecycle coordinator
 │       │   └── AudioManager.cs      # BGM & SFX playback + volume management
+│       ├── Gameplay/             # Ball Merge 2D physics mechanics
+│       │   ├── Ball.cs              # Physics entity & collision merge trigger
+│       │   ├── BallDropper.cs       # Horizontal aiming & drop release
+│       │   ├── BallMergeManager.cs  # Midpoint merge & pop scale spawner
+│       │   ├── ContainerBoundary.cs # 3 physical box colliders (walls + floor)
+│       │   └── GameplayController.cs# Session loop & score tracking
 │       ├── UiScripts/            # UI Panel stack & screens
 │       │   ├── UIBasePanel.cs       # Base animated panel class
 │       │   ├── UIManager.cs         # Panel navigation, popups & overlays
 │       │   ├── MainMenuPanel.cs     # Main menu screen
 │       │   ├── SettingsPanel.cs     # Audio & volume controls
 │       │   └── GenericPopupPanel.cs # Reusable alert/confirm modal dialog
-│       ├── Gameplay/             # Game-specific logic
-│       │   └── GameplayController.cs # Starter session loop & score tracker
+│       ├── Editor/               # Unity Editor tools
+│       │   └── BallMergeAssetCreator.cs # 1-click default SO asset generator
 │       └── Utils/                # Utilities & helpers
 │           └── Singleton.cs         # Persistent & safe generic Singleton
 └── Plugins/
@@ -129,14 +138,51 @@ Assets/
 
 ---
 
-## 🎯 5. Gameplay Foundation (`Scripts/Gameplay/`)
+## 🎯 5. Ball Merge Gameplay System (`Scripts/Gameplay/` & `Scripts/Data/`)
 
-### 🔹 `GameplayController`
-- Ready-to-extend starter controller.
-- `GameEvents.OnGameStateChanged` ko listen karta hai.
-- `GameState.InGame` hone par `StartSession()` trigger karta hai.
-- `AddScore(int points)` score update aur high-score check handle karta hai.
-- Session end ya player defeat hone par `TriggerGameOver()` call karta hai.
+Yeh Suika-style 2D Physics Ball Merge game mechanics ka core architecture hai:
+
+### 🔹 1. Data-Driven ScriptableObjects (`Scripts/Data/`)
+- **`BallDataSO`**: Har ball tier ka physical aur visual data hold karta hai:
+  - `tier`: Tier index (0 = Cherry, 1 = Plum, 2 = Orange, 3 = Apple, 4 = Melon, 5 = Watermelon...)
+  - `ballName`: Ball ka display name
+  - `radius`: Visual scale aur physical collider radius
+  - `ballColor`: Procedural color tint (custom sprite na hone par bhi har ball alag color me dikhti hai)
+  - `scoreValue`: Merge hone par milne wale points
+  - `mass`, `bounciness`, `friction`: Physics tuning
+- **`LevelDataSO`**: Level rules aur setup define karta hai:
+  - `allTiers`: Ordered list of all available tiers
+  - `droppableTiers`: Subset of lower tiers jo player dropper se spawn ho sakte hain (e.g. Tier 0, 1, 2)
+  - `dropCooldown`: Delay between drops
+  - `containerWidth`, `containerHeight`, `wallThickness`, `dropHeight`
+  - `GetNextTier(currentTier)`: Next higher tier resolve karta hai
+
+### 🔹 2. Physical Container (`ContainerBoundary.cs`)
+- Container ke **3 physical colliders** (Left Wall, Right Wall, Bottom Floor) generate karta hai.
+- Dimensions `LevelDataSO` se dynamically bind hoti hain.
+- Sprites ke through box visuals render karta hai.
+
+### 🔹 3. Dropper & Spawner (`BallDropper.cs`)
+- Container ke top par rehta hai.
+- Pointer/Mouse input ko world coordinates me convert karke horizontal axis par follow karta hai.
+- Aim position ko container walls ke andar clamp karta hai taaki ball bahar na jaye.
+- Click/Tap release par ball ko physics gravity me drop karta hai (`Drop()`).
+- Cooldown timer ke baad next ball automatically load karta hai.
+
+### 🔹 4. Ball Entity (`Ball.cs`)
+- `CircleCollider2D`, `Rigidbody2D` (Continuous 2D physics), aur `SpriteRenderer` se equipped.
+- Procedural circle texture fallback built-in hai (bina kisi external art ke bhi perfect circular ball render hoti hai).
+- **Atomic Merge Collision Check**: Jab do identical tier ki balls takrati hain, `GetInstanceID()` check se single merge lock lagta hai taaki duplicate event trigger na ho, aur `BallMergeManager` ko call karta hai.
+
+### 🔹 5. Merge Manager (`BallMergeManager.cs`)
+- Do identical balls ko collision midpoint par shrink animate karta hai.
+- Midpoint position par **Next Tier ki Ball** spawn karta hai.
+- DOTween `SetEase(Ease.OutBack)` ke sath juicy pop-scale animation play karta hai.
+- `GameEvents.OnScoreChanged` aur `GameEvents.OnPlaySFX("Merge")` trigger karta hai.
+
+### 🔹 6. Level Asset Generator Tool (`Scripts/Editor/BallMergeAssetCreator.cs`)
+- Ek click me 6 tiers ki `BallDataSO` aur `LevelData_Default.asset` generate karne ka Editor tool:
+  👉 Unity Top Menu: **`Tools -> Ball Merge -> Generate Default Level Assets`**
 
 ---
 

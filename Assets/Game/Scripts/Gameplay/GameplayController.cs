@@ -1,12 +1,18 @@
 using UnityEngine;
 
 /// <summary>
-/// Foundation controller for active gameplay sessions.
-/// Listens to GameState changes, coordinates game session loops, and tracks score.
-/// Attach this or extend it for your specific game mechanics.
+/// Master controller for active Ball Merge gameplay session.
+/// Coordinates LevelData, BallDropper, ContainerBoundary, and score tracking.
 /// </summary>
 public class GameplayController : MonoBehaviour
 {
+    [Header("Level Configuration")]
+    [SerializeField] private LevelDataSO levelData;
+
+    [Header("Component References")]
+    [SerializeField] private BallDropper dropper;
+    [SerializeField] private ContainerBoundary container;
+
     [Header("Session State")]
     [SerializeField] private int currentScore = 0;
     [SerializeField] private int highScore = 0;
@@ -16,14 +22,52 @@ public class GameplayController : MonoBehaviour
     public int HighScore => highScore;
     public bool IsSessionActive => isSessionActive;
 
+    private void Awake()
+    {
+        if (dropper == null) dropper = FindAnyObjectByType<BallDropper>();
+        if (container == null) container = FindAnyObjectByType<ContainerBoundary>();
+    }
+
+    private void Start()
+    {
+        highScore = PlayerPrefs.GetInt("BallMerge_HighScore", 0);
+        if (levelData != null)
+        {
+            InitializeLevel(levelData);
+        }
+    }
+
+    public void InitializeLevel(LevelDataSO data)
+    {
+        levelData = data;
+        if (BallMergeManager.HasInstance)
+        {
+            BallMergeManager.Instance.SetLevelData(levelData);
+        }
+
+        if (container != null)
+        {
+            container.Setup(levelData);
+        }
+
+        if (dropper != null)
+        {
+            dropper.Setup(levelData);
+        }
+    }
+
     private void OnEnable()
     {
         GameEvents.OnGameStateChanged += HandleGameStateChanged;
+        GameEvents.OnGamePaused += HandleGamePaused;
+        GameEvents.OnScoreChanged += HandleScoreAdded;
     }
 
     private void OnDisable()
     {
         GameEvents.OnGameStateChanged -= HandleGameStateChanged;
+        GameEvents.OnGamePaused -= HandleGamePaused;
+        GameEvents.OnScoreChanged -= HandleScoreAdded;
     }
 
     private void HandleGameStateChanged(GameState newState, GameState oldState)
@@ -38,47 +82,65 @@ public class GameplayController : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Called when the game state enters InGame.
-    /// </summary>
-    public virtual void StartSession()
+    private void HandleGamePaused(bool isPaused)
     {
-        currentScore = 0;
-        isSessionActive = true;
-        Debug.Log("[GameplayController] New gameplay session started.");
-        GameEvents.OnScoreChanged?.Invoke(currentScore);
+        if (dropper != null)
+        {
+            dropper.SetInputActive(!isPaused && isSessionActive);
+        }
     }
 
-    /// <summary>
-    /// Adds score points during gameplay and dispatches score events.
-    /// </summary>
-    public virtual void AddScore(int points)
+    private void HandleScoreAdded(int points)
     {
         if (!isSessionActive) return;
 
         currentScore += points;
-        GameEvents.OnScoreChanged?.Invoke(currentScore);
 
         if (currentScore > highScore)
         {
             highScore = currentScore;
+            PlayerPrefs.SetInt("BallMerge_HighScore", highScore);
+            PlayerPrefs.Save();
             GameEvents.OnHighScoreChanged?.Invoke(highScore);
         }
     }
 
     /// <summary>
-    /// Ends the current gameplay session.
+    /// Starts an active gameplay session.
+    /// </summary>
+    public virtual void StartSession()
+    {
+        currentScore = 0;
+        isSessionActive = true;
+        Debug.Log("[GameplayController] Ball Merge session started.");
+
+        if (dropper != null)
+        {
+            dropper.SetInputActive(true);
+        }
+
+        GameEvents.OnScoreChanged?.Invoke(0);
+        GameEvents.OnHighScoreChanged?.Invoke(highScore);
+    }
+
+    /// <summary>
+    /// Ends active gameplay session.
     /// </summary>
     public virtual void EndSession()
     {
         if (!isSessionActive) return;
 
         isSessionActive = false;
-        Debug.Log($"[GameplayController] Gameplay session ended. Final score: {currentScore}");
+        Debug.Log($"[GameplayController] Ball Merge session ended. Score: {currentScore}");
+
+        if (dropper != null)
+        {
+            dropper.SetInputActive(false);
+        }
     }
 
     /// <summary>
-    /// Helper to trigger GameOver from gameplay rules (e.g. player died or time up).
+    /// Helper to trigger GameOver from gameplay rules (e.g. overflow).
     /// </summary>
     public void TriggerGameOver()
     {
