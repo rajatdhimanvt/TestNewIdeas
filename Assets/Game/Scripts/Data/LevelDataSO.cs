@@ -10,12 +10,6 @@ public class LevelDataSO : ScriptableObject
     [Header("Level Info")]
     public string levelName = "Default Level";
 
-    [Header("Ball Tiers Progression")]
-    [Tooltip("All available ball tiers ordered from smallest to largest")]
-    public List<BallDataSO> allTiers = new List<BallDataSO>();
-
-    [Tooltip("Pool of ball tiers that can be randomly given to the player to drop")]
-    public List<BallDataSO> droppableTiers = new List<BallDataSO>();
 
     [Header("Dropper Configuration")]
     [Tooltip("Cooldown delay in seconds before next ball can be dropped")]
@@ -38,6 +32,17 @@ public class LevelDataSO : ScriptableObject
     [Range(0.2f, 2f)]
     public float wallThickness = 0.5f;
 
+    [Header("Active Ball Kit")]
+    [Tooltip("Default Ball Kit theme for this level. If BallKitManager is active, equipped kit is prioritized.")]
+    public BallKitSO defaultKit;
+
+    [Header("Fallback Ball Tiers (Legacy)")]
+    [Tooltip("Fallback list of ball tiers if no BallKit is active")]
+    public List<BallDataSO> allTiers = new List<BallDataSO>();
+
+    [Tooltip("Fallback pool of droppable ball tiers if no BallKit is active")]
+    public List<BallDataSO> droppableTiers = new List<BallDataSO>();
+
     [Header("Danger Line / Overflow Limit")]
     [Tooltip("Vertical Y position where overflow warning triggers")]
     public float dangerLineY = 2.5f;
@@ -47,11 +52,29 @@ public class LevelDataSO : ScriptableObject
     public float dangerTimeLimit = 3.0f;
 
     /// <summary>
+    /// Returns the active kit (Equipped kit from BallKitManager or defaultKit).
+    /// </summary>
+    public BallKitSO GetActiveKit()
+    {
+        if (BallKitManager.HasInstance && BallKitManager.Instance.CurrentEquippedKit != null)
+        {
+            return BallKitManager.Instance.CurrentEquippedKit;
+        }
+        return defaultKit;
+    }
+
+    /// <summary>
     /// Returns the next tier ball data for a successful merge.
     /// Returns null if the current ball is already at maximum tier.
     /// </summary>
     public BallDataSO GetNextTier(BallDataSO currentTier)
     {
+        BallKitSO activeKit = GetActiveKit();
+        if (activeKit != null)
+        {
+            return activeKit.GetNextTier(currentTier);
+        }
+
         if (currentTier == null || allTiers == null) return null;
 
         int index = allTiers.IndexOf(currentTier);
@@ -77,6 +100,12 @@ public class LevelDataSO : ScriptableObject
     /// </summary>
     public BallDataSO GetRandomDroppableTier()
     {
+        BallKitSO activeKit = GetActiveKit();
+        if (activeKit != null)
+        {
+            return activeKit.GetRandomDroppableTier();
+        }
+
         if (droppableTiers != null && droppableTiers.Count > 0)
         {
             int randomIndex = Random.Range(0, droppableTiers.Count);

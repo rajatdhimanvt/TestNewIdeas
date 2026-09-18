@@ -21,10 +21,53 @@ public class ContainerBoundary : MonoBehaviour
         BuildContainer();
     }
 
+    private void OnEnable()
+    {
+        ThemeManager.OnThemeChanged += HandleThemeChanged;
+    }
+
+    private void OnDisable()
+    {
+        ThemeManager.OnThemeChanged -= HandleThemeChanged;
+    }
+
+    private void HandleThemeChanged(ThemeDataSO newTheme)
+    {
+        if (newTheme != null)
+        {
+            SetWallColor(newTheme.wallColor);
+        }
+    }
+
+    public void SetWallColor(Color color)
+    {
+        wallColor = color;
+        ApplyWallColor(floorCollider);
+        ApplyWallColor(leftWallCollider);
+        ApplyWallColor(rightWallCollider);
+    }
+
+    private void ApplyWallColor(BoxCollider2D col)
+    {
+        if (col != null)
+        {
+            SpriteRenderer sr = col.GetComponent<SpriteRenderer>();
+            if (sr != null)
+            {
+                sr.color = wallColor;
+            }
+        }
+    }
+
     public void Setup(LevelDataSO data)
     {
         levelData = data;
         BuildContainer();
+
+        if (ThemeManager.HasInstance && ThemeManager.Instance.CurrentEquippedTheme != null)
+        {
+            SetWallColor(ThemeManager.Instance.CurrentEquippedTheme.wallColor);
+        }
     }
 
     /// <summary>

@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5ec07368b6f832b408daba4c144c9f07, type: 3}
+  m_Name: BallKit_sky_kit
+  m_EditorClassIdentifier: 
+  kitId: sky_kit
+  kitName: Sky High
+  kitIcon: {fileID: 0}
+  ballTiers:
+  - {fileID: 11400000, guid: bc9c4048cf8cfaf46a2f27ee76a6a79b, type: 2}
+  - {fileID: 11400000, guid: f51c0d66db443044695593f0784f4cbe, type: 2}
+  - {fileID: 11400000, guid: ddc00ffdc5d430b49b2aadb39773beca, type: 2}
+  - {fileID: 11400000, guid: 58221a514c83fa3439490a9f4c7cfcc4, type: 2}
+  - {fileID: 11400000, guid: 458bf611c84773e41bad95c7fc196c8a, type: 2}
+  - {fileID: 11400000, guid: ee58ab5937c965c47b41380664e75354, type: 2}
+  droppableTiers:
+  - {fileID: 11400000, guid: bc9c4048cf8cfaf46a2f27ee76a6a79b, type: 2}
+  - {fileID: 11400000, guid: f51c0d66db443044695593f0784f4cbe, type: 2}
+  - {fileID: 11400000, guid: ddc00ffdc5d430b49b2aadb39773beca, type: 2}

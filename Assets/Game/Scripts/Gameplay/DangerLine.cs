@@ -34,11 +34,43 @@ public class DangerLine : MonoBehaviour
         EnsureVisualRenderer();
     }
 
+    private void OnEnable()
+    {
+        ThemeManager.OnThemeChanged += HandleThemeChanged;
+    }
+
+    private void OnDisable()
+    {
+        ThemeManager.OnThemeChanged -= HandleThemeChanged;
+    }
+
+    private void HandleThemeChanged(ThemeDataSO newTheme)
+    {
+        if (newTheme != null)
+        {
+            SetNormalColor(newTheme.dangerLineColor);
+        }
+    }
+
+    public void SetNormalColor(Color color)
+    {
+        normalColor = color;
+        if (!isDangerActive && lineRenderer != null)
+        {
+            lineRenderer.color = normalColor;
+        }
+    }
+
     public void Setup(LevelDataSO data)
     {
         levelData = data;
         RebuildDangerLine();
         ResetTimer();
+
+        if (ThemeManager.HasInstance && ThemeManager.Instance.CurrentEquippedTheme != null)
+        {
+            SetNormalColor(ThemeManager.Instance.CurrentEquippedTheme.dangerLineColor);
+        }
     }
 
     /// <summary>

@@ -475,7 +475,7 @@ MonoBehaviour:
   levelData: {fileID: 11400000, guid: d9ecae61c296c4646b27ad4e6922fb73, type: 2}
   mainCamera: {fileID: 0}
   currentBall: {fileID: 0}
-  nextBallData: {fileID: 11400000, guid: fba1b6e57af32d342b60af2429993a23, type: 2}
+  nextBallData: {fileID: 11400000, guid: fb6e83e60ce602949ad21a3f9ae7d815, type: 2}
   canDrop: 1
   isInputActive: 1
 --- !u!1 &535458343
@@ -626,6 +626,8 @@ GameObject:
   - component: {fileID: 855283179}
   - component: {fileID: 855283178}
   - component: {fileID: 855283183}
+  - component: {fileID: 855283184}
+  - component: {fileID: 855283185}
   m_Layer: 0
   m_Name: '[Managers]'
   m_TagString: Untagged
@@ -729,6 +731,45 @@ MonoBehaviour:
   floatDistance: 1.2
   duration: 0.7
   sortingOrder: 100
+--- !u!114 &855283184
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 855283177}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 00deecce4bdee5b4494b0761e2fe8f4e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  dontDestroyOnLoad: 0
+  defaultKit: {fileID: 11400000, guid: 10dc499d3e8d36246a1fd039d0ef4d79, type: 2}
+  availableKits:
+  - {fileID: 11400000, guid: 10dc499d3e8d36246a1fd039d0ef4d79, type: 2}
+  - {fileID: 11400000, guid: 97f23bdd5a0532c4dbc295b17c19b2b6, type: 2}
+  - {fileID: 11400000, guid: bdb0d020bf9ef554db2e55d875248c05, type: 2}
+  currentEquippedKit: {fileID: 11400000, guid: 10dc499d3e8d36246a1fd039d0ef4d79, type: 2}
+--- !u!114 &855283185
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 855283177}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 06fec24eb79e58c4eac0aa3382a8fbd3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  dontDestroyOnLoad: 0
+  defaultTheme: {fileID: 11400000, guid: a065b01be23590d46991e5701fcba0ce, type: 2}
+  availableThemes:
+  - {fileID: 11400000, guid: 890f61a189a0fad4ea4a73aff197c157, type: 2}
+  - {fileID: 11400000, guid: a065b01be23590d46991e5701fcba0ce, type: 2}
+  - {fileID: 11400000, guid: 55e171f513a534243bd72919e3451ac1, type: 2}
+  - {fileID: 11400000, guid: 982f67aa2e3faf3479a5ddaa16a455d8, type: 2}
+  currentEquippedTheme: {fileID: 11400000, guid: a065b01be23590d46991e5701fcba0ce, type: 2}
 --- !u!28 &984683373
 Texture2D:
   m_ObjectHideFlags: 0

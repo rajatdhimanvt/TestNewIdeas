@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5ec07368b6f832b408daba4c144c9f07, type: 3}
+  m_Name: BallKit_ocean_kit
+  m_EditorClassIdentifier: 
+  kitId: ocean_kit
+  kitName: Ocean World
+  kitIcon: {fileID: 0}
+  ballTiers:
+  - {fileID: 11400000, guid: f1b5d15974b98ba42ba14a2da17119b6, type: 2}
+  - {fileID: 11400000, guid: 68eb2bb31f6c484498e3ebee4e14e7b2, type: 2}
+  - {fileID: 11400000, guid: 8bebaf1325badb140beab3c8149ff69e, type: 2}
+  - {fileID: 11400000, guid: c4210e81edcf06642afa4372cd1a5ac4, type: 2}
+  - {fileID: 11400000, guid: 0f69fd8797e98a54ca6b8f83e7fa039c, type: 2}
+  - {fileID: 11400000, guid: 7691ea0f9cf851c4282e99a875851e25, type: 2}
+  droppableTiers:
+  - {fileID: 11400000, guid: f1b5d15974b98ba42ba14a2da17119b6, type: 2}
+  - {fileID: 11400000, guid: 68eb2bb31f6c484498e3ebee4e14e7b2, type: 2}
+  - {fileID: 11400000, guid: 8bebaf1325badb140beab3c8149ff69e, type: 2}

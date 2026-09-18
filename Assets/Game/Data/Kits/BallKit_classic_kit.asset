@@ -9,17 +9,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a7ead9bd80c99f84db722a3727d61b79, type: 3}
-  m_Name: LevelData_Default
+  m_Script: {fileID: 11500000, guid: 5ec07368b6f832b408daba4c144c9f07, type: 3}
+  m_Name: BallKit_classic_kit
   m_EditorClassIdentifier: 
-  levelName: Classic Mode
-  dropCooldown: 0.5
-  dropHeight: 3.8
-  containerWidth: 5.5
-  containerHeight: 8.5
-  wallThickness: 0.5
-  defaultKit: {fileID: 11400000, guid: 10dc499d3e8d36246a1fd039d0ef4d79, type: 2}
-  allTiers:
+  kitId: classic_kit
+  kitName: Classic Fruits
+  kitIcon: {fileID: 0}
+  ballTiers:
   - {fileID: 11400000, guid: fb6e83e60ce602949ad21a3f9ae7d815, type: 2}
   - {fileID: 11400000, guid: c8f2502523d51b84b927137cfa9fd8a6, type: 2}
   - {fileID: 11400000, guid: acf6c02866bd8024b98b816f1311bc4f, type: 2}
@@ -30,5 +26,3 @@ MonoBehaviour:
   - {fileID: 11400000, guid: fb6e83e60ce602949ad21a3f9ae7d815, type: 2}
   - {fileID: 11400000, guid: c8f2502523d51b84b927137cfa9fd8a6, type: 2}
   - {fileID: 11400000, guid: acf6c02866bd8024b98b816f1311bc4f, type: 2}
-  dangerLineY: 2.5
-  dangerTimeLimit: 3

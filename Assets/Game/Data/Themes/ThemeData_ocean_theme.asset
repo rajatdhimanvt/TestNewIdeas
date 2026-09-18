@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f06e076c7996487409842ad461b8d0ff, type: 3}
+  m_Name: ThemeData_ocean_theme
+  m_EditorClassIdentifier: 
+  themeId: ocean_theme
+  themeName: Ocean Depth
+  themeIcon: {fileID: 0}
+  backgroundColor: {r: 0.04, g: 0.11, b: 0.22, a: 1}
+  wallColor: {r: 0.12, g: 0.82, b: 0.85, a: 0.8}
+  dangerLineColor: {r: 1, g: 0.5, b: 0.2, a: 0.4}
+  backgroundSprite: {fileID: 0}
