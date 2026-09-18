@@ -7,6 +7,19 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "LevelData_", menuName = "BallMerge/Level Data")]
 public class LevelDataSO : ScriptableObject
 {
+    [Header("Game Mode Configuration")]
+    [Tooltip("Endless Mode vs Level Mode")]
+    public GameMode gameMode = GameMode.Endless;
+
+    [Tooltip("Level number for campaign progression (Level mode)")]
+    public int levelNumber = 1;
+
+    [Tooltip("Target score required to complete the level (Level mode)")]
+    public int targetScore = 500;
+
+    [Tooltip("Maximum allowed ball drops (Level mode). Set to 0 for unlimited.")]
+    public int maxDrops = 30;
+
     [Header("Level Info")]
     public string levelName = "Default Level";
 

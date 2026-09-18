@@ -19,9 +19,18 @@ public class GameplayController : MonoBehaviour
     [SerializeField] private int highScore = 0;
     [SerializeField] private bool isSessionActive = false;
 
+    [Header("Game Mode & Drops State")]
+    [SerializeField] private int remainingDrops = 0;
+    [SerializeField] private int totalDropsUsed = 0;
+    [SerializeField] private bool levelCompleted = false;
+
     public int CurrentScore => currentScore;
     public int HighScore => highScore;
     public bool IsSessionActive => isSessionActive;
+    public int RemainingDrops => remainingDrops;
+    public int TotalDropsUsed => totalDropsUsed;
+    public bool LevelCompleted => levelCompleted;
+    public LevelDataSO ActiveLevelData => levelData;
 
     private void Awake()
     {
@@ -68,6 +77,7 @@ public class GameplayController : MonoBehaviour
         GameEvents.OnGameStateChanged += HandleGameStateChanged;
         GameEvents.OnGamePaused += HandleGamePaused;
         GameEvents.OnScoreChanged += HandleScoreAdded;
+        GameEvents.OnBallDropped += HandleBallDropped;
     }
 
     private void OnDisable()
@@ -75,6 +85,7 @@ public class GameplayController : MonoBehaviour
         GameEvents.OnGameStateChanged -= HandleGameStateChanged;
         GameEvents.OnGamePaused -= HandleGamePaused;
         GameEvents.OnScoreChanged -= HandleScoreAdded;
+        GameEvents.OnBallDropped -= HandleBallDropped;
     }
 
     private void HandleGameStateChanged(GameState newState, GameState oldState)
@@ -97,6 +108,24 @@ public class GameplayController : MonoBehaviour
         }
     }
 
+    private void HandleBallDropped()
+    {
+        if (!isSessionActive) return;
+
+        totalDropsUsed++;
+
+        if (levelData != null && levelData.gameMode == GameMode.Level)
+        {
+            if (remainingDrops > 0)
+            {
+                remainingDrops--;
+                GameEvents.OnRemainingDropsChanged?.Invoke(remainingDrops);
+            }
+
+            CheckLevelCompletionCriteria();
+        }
+    }
+
     private void HandleScoreAdded(int points)
     {
         if (!isSessionActive) return;
@@ -110,6 +139,35 @@ public class GameplayController : MonoBehaviour
             PlayerPrefs.Save();
             GameEvents.OnHighScoreChanged?.Invoke(highScore);
         }
+
+        if (levelData != null && levelData.gameMode == GameMode.Level)
+        {
+            CheckLevelCompletionCriteria();
+        }
+    }
+
+    private void CheckLevelCompletionCriteria()
+    {
+        if (levelData == null || levelData.gameMode != GameMode.Level || levelCompleted || !isSessionActive) return;
+
+        // Check Win Condition
+        if (currentScore >= levelData.targetScore)
+        {
+            levelCompleted = true;
+            Debug.Log($"[GameplayController] Level {levelData.levelNumber} COMPLETED! Target score {levelData.targetScore} reached.");
+            GameEvents.OnLevelCompleted?.Invoke(levelData.levelNumber, true);
+            GameEvents.OnPlaySFX?.Invoke("LevelWin");
+            return;
+        }
+
+        // Check Lose Condition (Drops exhausted before target score reached)
+        if (remainingDrops <= 0 && currentScore < levelData.targetScore)
+        {
+            Debug.Log($"[GameplayController] Level {levelData.levelNumber} FAILED! Out of drops ({levelData.maxDrops}). Score: {currentScore}/{levelData.targetScore}");
+            GameEvents.OnLevelCompleted?.Invoke(levelData.levelNumber, false);
+            GameEvents.OnPlaySFX?.Invoke("LevelLose");
+            TriggerGameOver();
+        }
     }
 
     /// <summary>
@@ -118,8 +176,22 @@ public class GameplayController : MonoBehaviour
     public virtual void StartSession()
     {
         currentScore = 0;
+        totalDropsUsed = 0;
+        levelCompleted = false;
         isSessionActive = true;
-        Debug.Log("[GameplayController] Ball Merge session started.");
+
+        if (levelData != null && levelData.gameMode == GameMode.Level)
+        {
+            remainingDrops = levelData.maxDrops;
+            GameEvents.OnLevelStarted?.Invoke(levelData.levelNumber);
+            GameEvents.OnRemainingDropsChanged?.Invoke(remainingDrops);
+            Debug.Log($"[GameplayController] Started LEVEL Mode: Level {levelData.levelNumber} (Target: {levelData.targetScore}, Max Drops: {levelData.maxDrops})");
+        }
+        else
+        {
+            remainingDrops = -1; // Unlimited
+            Debug.Log("[GameplayController] Started ENDLESS Mode: Unlimited drops.");
+        }
 
         if (dropper != null)
         {
@@ -134,6 +206,8 @@ public class GameplayController : MonoBehaviour
         GameEvents.OnScoreChanged?.Invoke(0);
         GameEvents.OnHighScoreChanged?.Invoke(highScore);
     }
+
+        
 
     /// <summary>
     /// Ends active gameplay session.

@@ -475,7 +475,7 @@ MonoBehaviour:
   levelData: {fileID: 11400000, guid: d9ecae61c296c4646b27ad4e6922fb73, type: 2}
   mainCamera: {fileID: 0}
   currentBall: {fileID: 0}
-  nextBallData: {fileID: 11400000, guid: fb6e83e60ce602949ad21a3f9ae7d815, type: 2}
+  nextBallData: {fileID: 11400000, guid: acf6c02866bd8024b98b816f1311bc4f, type: 2}
   canDrop: 1
   isInputActive: 1
 --- !u!1 &535458343
@@ -763,13 +763,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   dontDestroyOnLoad: 0
-  defaultTheme: {fileID: 11400000, guid: a065b01be23590d46991e5701fcba0ce, type: 2}
+  defaultTheme: {fileID: 11400000, guid: 890f61a189a0fad4ea4a73aff197c157, type: 2}
   availableThemes:
   - {fileID: 11400000, guid: 890f61a189a0fad4ea4a73aff197c157, type: 2}
   - {fileID: 11400000, guid: a065b01be23590d46991e5701fcba0ce, type: 2}
   - {fileID: 11400000, guid: 55e171f513a534243bd72919e3451ac1, type: 2}
   - {fileID: 11400000, guid: 982f67aa2e3faf3479a5ddaa16a455d8, type: 2}
-  currentEquippedTheme: {fileID: 11400000, guid: a065b01be23590d46991e5701fcba0ce, type: 2}
+  currentEquippedTheme: {fileID: 11400000, guid: 890f61a189a0fad4ea4a73aff197c157, type: 2}
 --- !u!28 &984683373
 Texture2D:
   m_ObjectHideFlags: 0
@@ -1139,6 +1139,9 @@ MonoBehaviour:
   currentScore: 0
   highScore: 0
   isSessionActive: 0
+  remainingDrops: 0
+  totalDropsUsed: 0
+  levelCompleted: 0
 --- !u!4 &1857043458
 Transform:
   m_ObjectHideFlags: 0

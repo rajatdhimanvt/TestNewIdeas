@@ -127,6 +127,7 @@ public class BallDropper : MonoBehaviour
         currentBall = null;
 
         GameEvents.OnPlaySFX?.Invoke("Drop");
+        GameEvents.OnBallDropped?.Invoke();
 
         StartCoroutine(DropCooldownRoutine());
     }

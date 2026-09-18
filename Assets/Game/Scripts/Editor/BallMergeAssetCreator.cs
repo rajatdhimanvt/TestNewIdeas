@@ -63,16 +63,23 @@ public static class BallMergeAssetCreator
         CreateThemeAsset("sky_theme", "Sky Breeze", new Color(0.16f, 0.29f, 0.49f), new Color(0.48f, 0.91f, 1.0f, 0.85f), new Color(1.0f, 0.4f, 0.7f, 0.4f));
         CreateThemeAsset("sunset_theme", "Sunset Glow", new Color(0.16f, 0.08f, 0.21f), new Color(1.0f, 0.49f, 0.2f, 0.85f), new Color(1.0f, 0.82f, 0.0f, 0.4f));
 
-        // 5. Create or update default LevelDataSO
-        string levelPath = $"{DATA_FOLDER}/LevelData_Default.asset";
-        LevelDataSO levelData = AssetDatabase.LoadAssetAtPath<LevelDataSO>(levelPath);
+        // 5. Create or update LevelDataSO assets (Endless, Level 1 & Default)
+        LevelDataSO endlessData = CreateOrUpdateLevelAsset($"{DATA_FOLDER}/LevelData_Endless.asset", "Endless Mode", GameMode.Endless, 0, 0, 0, classicKit);
+        LevelDataSO level1Data = CreateOrUpdateLevelAsset($"{DATA_FOLDER}/LevelData_Level1.asset", "Level 1: Target 500", GameMode.Level, 1, 500, 30, classicKit);
+
+        string defaultPath = $"{DATA_FOLDER}/LevelData_Default.asset";
+        LevelDataSO levelData = AssetDatabase.LoadAssetAtPath<LevelDataSO>(defaultPath);
         if (levelData == null)
         {
             levelData = ScriptableObject.CreateInstance<LevelDataSO>();
-            AssetDatabase.CreateAsset(levelData, levelPath);
+            AssetDatabase.CreateAsset(levelData, defaultPath);
         }
 
-        levelData.levelName = "Classic Mode";
+        levelData.gameMode = GameMode.Endless;
+        levelData.levelNumber = 0;
+        levelData.targetScore = 0;
+        levelData.maxDrops = 0;
+        levelData.levelName = "Classic Endless";
         levelData.defaultKit = classicKit;
         levelData.allTiers = classicKit.ballTiers;
         levelData.droppableTiers = classicKit.droppableTiers;
@@ -89,8 +96,40 @@ public static class BallMergeAssetCreator
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
 
-        Debug.Log("[BallMergeAssetCreator] Successfully created Ball Kits, Environment Themes & LevelData_Default!");
-        Selection.activeObject = classicKit;
+        Debug.Log("[BallMergeAssetCreator] Successfully created Ball Kits, Environment Themes, Endless Data & Level 1 Data!");
+        Selection.activeObject = levelData;
+    }
+
+    private static LevelDataSO CreateOrUpdateLevelAsset(string assetPath, string levelName, GameMode mode, int levelNum, int targetScore, int maxDrops, BallKitSO kit)
+    {
+        LevelDataSO data = AssetDatabase.LoadAssetAtPath<LevelDataSO>(assetPath);
+        if (data == null)
+        {
+            data = ScriptableObject.CreateInstance<LevelDataSO>();
+            AssetDatabase.CreateAsset(data, assetPath);
+        }
+
+        data.gameMode = mode;
+        data.levelName = levelName;
+        data.levelNumber = levelNum;
+        data.targetScore = targetScore;
+        data.maxDrops = maxDrops;
+        data.defaultKit = kit;
+        if (kit != null)
+        {
+            data.allTiers = kit.ballTiers;
+            data.droppableTiers = kit.droppableTiers;
+        }
+        data.containerWidth = 5.5f;
+        data.containerHeight = 8.5f;
+        data.wallThickness = 0.5f;
+        data.dropHeight = 3.8f;
+        data.dropCooldown = 0.5f;
+        data.dangerLineY = 2.5f;
+        data.dangerTimeLimit = 3.0f;
+
+        EditorUtility.SetDirty(data);
+        return data;
     }
 
     private static BallKitSO CreateKitAsset<TConfig>(string kitId, string kitName, TConfig[] tiersConfig) where TConfig : class

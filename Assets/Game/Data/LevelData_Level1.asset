@@ -10,13 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a7ead9bd80c99f84db722a3727d61b79, type: 3}
-  m_Name: LevelData_Default
+  m_Name: LevelData_Level1
   m_EditorClassIdentifier: 
   gameMode: 1
-  levelNumber: 0
-  targetScore: 0
-  maxDrops: 0
-  levelName: Classic Endless
+  levelNumber: 1
+  targetScore: 500
+  maxDrops: 30
+  levelName: 'Level 1: Target 500'
   dropCooldown: 0.5
   dropHeight: 3.8
   containerWidth: 5.5
