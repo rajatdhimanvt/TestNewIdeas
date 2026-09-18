@@ -1,11 +1,14 @@
 #if UNITY_EDITOR
 using System.Collections.Generic;
 using System.IO;
+using TMPro;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.UI;
 
 /// <summary>
-/// Editor utility to generate default assets, sample Ball Kits, environment Themes, and automatically setup the game scene.
+/// Editor utility to generate default assets, sample Ball Kits, environment Themes, 
+/// and automatically build complete UGUI Canvas, panels, and visual button hierarchies in Unity.
 /// Accessible via Unity Editor top menu: Tools -> Ball Merge.
 /// </summary>
 public static class BallMergeAssetCreator
@@ -57,7 +60,7 @@ public static class BallMergeAssetCreator
         };
         BallKitSO skyKit = CreateKitAsset("sky_kit", "Sky High", skyTiersConfig);
 
-        // 4. Generate Visual Environment Themes (Independent from Kits)
+        // 4. Generate Visual Environment Themes
         CreateThemeAsset("dark_theme", "Dark Cosmic", new Color(0.12f, 0.13f, 0.18f), new Color(0.2f, 0.65f, 1.0f, 0.8f), new Color(1.0f, 0.3f, 0.3f, 0.4f));
         CreateThemeAsset("ocean_theme", "Ocean Depth", new Color(0.04f, 0.11f, 0.22f), new Color(0.12f, 0.82f, 0.85f, 0.8f), new Color(1.0f, 0.5f, 0.2f, 0.4f));
         CreateThemeAsset("sky_theme", "Sky Breeze", new Color(0.16f, 0.29f, 0.49f), new Color(0.48f, 0.91f, 1.0f, 0.85f), new Color(1.0f, 0.4f, 0.7f, 0.4f));
@@ -284,7 +287,7 @@ public static class BallMergeAssetCreator
 
         bkm.RegisterKits(kits, classicKit);
 
-        // Setup ThemeManager (Independent from BallKits)
+        // Setup ThemeManager
         ThemeManager tm = managersObj.GetComponent<ThemeManager>();
         if (tm == null) tm = managersObj.AddComponent<ThemeManager>();
 
@@ -342,13 +345,400 @@ public static class BallMergeAssetCreator
         // Initialize Level in GameplayController
         gc.InitializeLevel(levelData);
 
+        // 7. Setup UI Canvas, Visual Hierarchy and Auto-Wire Buttons
+        SetupUICanvas();
+
         // Apply theme visual update
         tm.ApplyCurrentTheme();
 
         // Mark scene dirty so changes are saved
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
 
-        Debug.Log("[BallMergeAssetCreator] Complete game scene with BallKitManager & ThemeManager setup successfully!");
+        Debug.Log("[BallMergeAssetCreator] COMPLETE GAME SCENE & UI CANVAS GENERATED SUCCESSFULLY!");
     }
+
+    private static void SetupUICanvas()
+    {
+        // 1. Setup EventSystem
+        if (UnityEngine.Object.FindAnyObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
+        {
+            GameObject esObj = new GameObject("EventSystem");
+            esObj.AddComponent<UnityEngine.EventSystems.EventSystem>();
+            esObj.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+        }
+
+        // 2. Setup [UI] Canvas
+        GameObject uiObj = GameObject.Find("[UI]");
+        if (uiObj == null) uiObj = new GameObject("[UI]");
+
+        Canvas canvas = uiObj.GetComponent<Canvas>();
+        if (canvas == null) canvas = uiObj.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+
+        CanvasScaler scaler = uiObj.GetComponent<CanvasScaler>();
+        if (scaler == null) scaler = uiObj.AddComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1080, 1920);
+        scaler.matchWidthOrHeight = 0.5f;
+
+        if (uiObj.GetComponent<GraphicRaycaster>() == null)
+        {
+            uiObj.AddComponent<GraphicRaycaster>();
+        }
+
+        UIManager uim = uiObj.GetComponent<UIManager>();
+        if (uim == null) uim = uiObj.AddComponent<UIManager>();
+
+        // Build Visual Hierarchy for Panels
+        BuildMainMenuPanel(uiObj);
+        BuildGameplayHUDPanel(uiObj);
+        BuildGameOverPanel(uiObj);
+        BuildLevelWinPanel(uiObj);
+        BuildBallKitShopPanel(uiObj);
+        BuildThemeShopPanel(uiObj);
+        BuildSettingsPanel(uiObj);
+        BuildGenericPopupPanel(uiObj);
+
+        uim.Init();
+        uim.ShowPanel<MainMenuPanel>();
+    }
+
+    #region Panel Visual Builders
+
+    private static void BuildMainMenuPanel(GameObject parent)
+    {
+        MainMenuPanel panel = EnsurePanel<MainMenuPanel>(parent);
+        ClearChildren(panel.gameObject);
+
+        // Background
+        CreateUIImage(panel.gameObject, "Background", Vector2.zero, new Vector2(1080, 1920), new Color(0.1f, 0.11f, 0.16f, 1f));
+
+        // Title & Score
+        TMP_Text title = CreateUIText(panel.gameObject, "TitleText", "BALL MERGE 2D", new Vector2(0, 600), new Vector2(900, 150), 68, new Color(0.95f, 0.85f, 0.2f), TextAlignmentOptions.Center);
+        TMP_Text highScore = CreateUIText(panel.gameObject, "HighScoreText", "BEST SCORE: 0", new Vector2(0, 480), new Vector2(900, 80), 34, Color.white, TextAlignmentOptions.Center);
+
+        // Mode Buttons
+        Button playEndless = CreateUIButton(panel.gameObject, "PlayEndlessButton", "PLAY ENDLESS", new Vector2(0, 200), new Vector2(500, 110), new Color(0.18f, 0.8f, 0.44f), Color.white);
+        Button playLevel1 = CreateUIButton(panel.gameObject, "PlayLevel1Button", "PLAY LEVEL 1", new Vector2(0, 70), new Vector2(500, 110), new Color(0.2f, 0.6f, 0.86f), Color.white);
+
+        // Customization Buttons
+        Button ballKits = CreateUIButton(panel.gameObject, "BallKitsButton", "BALL KITS", new Vector2(0, -60), new Vector2(500, 95), new Color(0.61f, 0.35f, 0.71f), Color.white);
+        Button themes = CreateUIButton(panel.gameObject, "ThemesButton", "THEMES", new Vector2(0, -170), new Vector2(500, 95), new Color(0.9f, 0.49f, 0.13f), Color.white);
+
+        // Utility Buttons
+        Button settings = CreateUIButton(panel.gameObject, "SettingsButton", "SETTINGS", new Vector2(0, -280), new Vector2(500, 95), new Color(0.2f, 0.29f, 0.37f), Color.white);
+        Button quit = CreateUIButton(panel.gameObject, "QuitButton", "QUIT", new Vector2(0, -390), new Vector2(500, 95), new Color(0.91f, 0.3f, 0.24f), Color.white);
+
+        // Auto-wire SerializedObject
+        SerializedObject so = new SerializedObject(panel);
+        so.FindProperty("playEndlessButton").objectReferenceValue = playEndless;
+        so.FindProperty("playLevel1Button").objectReferenceValue = playLevel1;
+        so.FindProperty("ballKitsButton").objectReferenceValue = ballKits;
+        so.FindProperty("themesButton").objectReferenceValue = themes;
+        so.FindProperty("settingsButton").objectReferenceValue = settings;
+        so.FindProperty("quitButton").objectReferenceValue = quit;
+        so.FindProperty("highScoreText").objectReferenceValue = highScore;
+        so.ApplyModifiedProperties();
+    }
+
+    private static void BuildGameplayHUDPanel(GameObject parent)
+    {
+        GameplayHUDPanel panel = EnsurePanel<GameplayHUDPanel>(parent);
+        ClearChildren(panel.gameObject);
+
+        // Top Header Bar
+        CreateUIImage(panel.gameObject, "TopHeaderBar", new Vector2(0, 860), new Vector2(1080, 200), new Color(0.08f, 0.09f, 0.12f, 0.85f));
+
+        TMP_Text modeTitle = CreateUIText(panel.gameObject, "ModeTitleText", "ENDLESS MODE", new Vector2(0, 900), new Vector2(600, 60), 36, new Color(0.2f, 0.8f, 1f), TextAlignmentOptions.Center);
+        TMP_Text score = CreateUIText(panel.gameObject, "ScoreText", "0", new Vector2(0, 825), new Vector2(600, 90), 56, Color.white, TextAlignmentOptions.Center);
+        TMP_Text highScore = CreateUIText(panel.gameObject, "HighScoreText", "BEST: 0", new Vector2(-360, 840), new Vector2(300, 60), 28, new Color(0.9f, 0.8f, 0.3f), TextAlignmentOptions.Left);
+
+        // Drops Container
+        GameObject dropsObj = new GameObject("DropsContainer");
+        dropsObj.transform.SetParent(panel.transform, false);
+        RectTransform dropsRect = dropsObj.AddComponent<RectTransform>();
+        dropsRect.anchoredPosition = new Vector2(360, 840);
+        dropsRect.sizeDelta = new Vector2(300, 60);
+
+        TMP_Text drops = CreateUIText(dropsObj, "DropsText", "DROPS: 30 / 30", Vector2.zero, new Vector2(300, 60), 28, new Color(1f, 0.4f, 0.4f), TextAlignmentOptions.Right);
+
+        // Next Ball Preview
+        GameObject nextBallObj = new GameObject("NextBallContainer");
+        nextBallObj.transform.SetParent(panel.transform, false);
+        RectTransform nbRect = nextBallObj.AddComponent<RectTransform>();
+        nbRect.anchoredPosition = new Vector2(-420, 690);
+        nbRect.sizeDelta = new Vector2(160, 120);
+
+        CreateUIText(nextBallObj, "NextLabel", "NEXT:", new Vector2(0, 35), new Vector2(160, 40), 24, Color.gray, TextAlignmentOptions.Center);
+        Image nextBallImg = CreateUIImage(nextBallObj, "NextBallImage", new Vector2(0, -15), new Vector2(60, 60), new Color(0.95f, 0.2f, 0.25f));
+        TMP_Text nextBallName = CreateUIText(nextBallObj, "NextBallNameText", "Cherry", new Vector2(0, -55), new Vector2(160, 30), 20, Color.white, TextAlignmentOptions.Center);
+
+        // Pause Button
+        Button pause = CreateUIButton(panel.gameObject, "PauseButton", "||", new Vector2(450, 690), new Vector2(90, 90), new Color(0.2f, 0.25f, 0.35f), Color.white);
+
+        // Auto-wire SerializedObject
+        SerializedObject so = new SerializedObject(panel);
+        so.FindProperty("scoreText").objectReferenceValue = score;
+        so.FindProperty("highScoreText").objectReferenceValue = highScore;
+        so.FindProperty("modeTitleText").objectReferenceValue = modeTitle;
+        so.FindProperty("dropsContainer").objectReferenceValue = dropsObj;
+        so.FindProperty("dropsText").objectReferenceValue = drops;
+        so.FindProperty("nextBallNameText").objectReferenceValue = nextBallName;
+        so.FindProperty("nextBallImage").objectReferenceValue = nextBallImg;
+        so.FindProperty("pauseButton").objectReferenceValue = pause;
+        so.ApplyModifiedProperties();
+    }
+
+    private static void BuildGameOverPanel(GameObject parent)
+    {
+        GameOverPanel panel = EnsurePanel<GameOverPanel>(parent);
+        ClearChildren(panel.gameObject);
+
+        // Dim & Window Box
+        CreateUIImage(panel.gameObject, "BackgroundDim", Vector2.zero, new Vector2(1080, 1920), new Color(0f, 0f, 0f, 0.75f));
+        GameObject window = new GameObject("WindowBox");
+        window.transform.SetParent(panel.transform, false);
+        CreateUIImage(window, "WindowBg", Vector2.zero, new Vector2(850, 850), new Color(0.15f, 0.17f, 0.24f, 1f));
+
+        TMP_Text title = CreateUIText(window, "TitleText", "GAME OVER", new Vector2(0, 280), new Vector2(750, 100), 56, new Color(0.91f, 0.3f, 0.24f), TextAlignmentOptions.Center);
+        TMP_Text finalScore = CreateUIText(window, "FinalScoreText", "SCORE: 0", new Vector2(0, 140), new Vector2(750, 80), 42, Color.white, TextAlignmentOptions.Center);
+        TMP_Text highScore = CreateUIText(window, "HighScoreText", "BEST: 0", new Vector2(0, 40), new Vector2(750, 60), 32, new Color(0.95f, 0.85f, 0.2f), TextAlignmentOptions.Center);
+
+        Button restart = CreateUIButton(window, "RestartButton", "REPLAY", new Vector2(0, -110), new Vector2(450, 100), new Color(0.18f, 0.8f, 0.44f), Color.white);
+        Button mainMenu = CreateUIButton(window, "MainMenuButton", "MAIN MENU", new Vector2(0, -240), new Vector2(450, 100), new Color(0.91f, 0.3f, 0.24f), Color.white);
+
+        SerializedObject so = new SerializedObject(panel);
+        so.FindProperty("titleText").objectReferenceValue = title;
+        so.FindProperty("finalScoreText").objectReferenceValue = finalScore;
+        so.FindProperty("highScoreText").objectReferenceValue = highScore;
+        so.FindProperty("restartButton").objectReferenceValue = restart;
+        so.FindProperty("mainMenuButton").objectReferenceValue = mainMenu;
+        so.ApplyModifiedProperties();
+    }
+
+    private static void BuildLevelWinPanel(GameObject parent)
+    {
+        LevelWinPanel panel = EnsurePanel<LevelWinPanel>(parent);
+        ClearChildren(panel.gameObject);
+
+        CreateUIImage(panel.gameObject, "BackgroundDim", Vector2.zero, new Vector2(1080, 1920), new Color(0f, 0f, 0f, 0.75f));
+        GameObject window = new GameObject("WindowBox");
+        window.transform.SetParent(panel.transform, false);
+        CreateUIImage(window, "WindowBg", Vector2.zero, new Vector2(850, 900), new Color(0.12f, 0.18f, 0.24f, 1f));
+
+        TMP_Text title = CreateUIText(window, "TitleText", "LEVEL PASSED!", new Vector2(0, 310), new Vector2(750, 100), 54, new Color(0.95f, 0.85f, 0.2f), TextAlignmentOptions.Center);
+        TMP_Text score = CreateUIText(window, "ScoreText", "FINAL SCORE: 0", new Vector2(0, 170), new Vector2(750, 80), 38, Color.white, TextAlignmentOptions.Center);
+        TMP_Text dropsUsed = CreateUIText(window, "DropsUsedText", "DROPS USED: 0", new Vector2(0, 80), new Vector2(750, 60), 30, new Color(0.7f, 0.85f, 1f), TextAlignmentOptions.Center);
+
+        Button nextLevel = CreateUIButton(window, "NextLevelButton", "NEXT LEVEL", new Vector2(0, -60), new Vector2(450, 95), new Color(0.18f, 0.8f, 0.44f), Color.white);
+        Button replay = CreateUIButton(window, "ReplayButton", "REPLAY", new Vector2(0, -170), new Vector2(450, 95), new Color(0.2f, 0.6f, 0.86f), Color.white);
+        Button mainMenu = CreateUIButton(window, "MainMenuButton", "MAIN MENU", new Vector2(0, -280), new Vector2(450, 95), new Color(0.91f, 0.3f, 0.24f), Color.white);
+
+        SerializedObject so = new SerializedObject(panel);
+        so.FindProperty("titleText").objectReferenceValue = title;
+        so.FindProperty("scoreText").objectReferenceValue = score;
+        so.FindProperty("dropsUsedText").objectReferenceValue = dropsUsed;
+        so.FindProperty("nextLevelButton").objectReferenceValue = nextLevel;
+        so.FindProperty("replayButton").objectReferenceValue = replay;
+        so.FindProperty("mainMenuButton").objectReferenceValue = mainMenu;
+        so.ApplyModifiedProperties();
+    }
+
+    private static void BuildBallKitShopPanel(GameObject parent)
+    {
+        BallKitShopPanel panel = EnsurePanel<BallKitShopPanel>(parent);
+        ClearChildren(panel.gameObject);
+
+        CreateUIImage(panel.gameObject, "Background", Vector2.zero, new Vector2(1080, 1920), new Color(0.1f, 0.11f, 0.16f, 1f));
+
+        CreateUIText(panel.gameObject, "TitleText", "BALL KITS SHOP", new Vector2(0, 600), new Vector2(900, 120), 58, new Color(0.61f, 0.35f, 0.71f), TextAlignmentOptions.Center);
+        TMP_Text currentKit = CreateUIText(panel.gameObject, "CurrentKitNameText", "ACTIVE: CLASSIC FRUITS", new Vector2(0, 470), new Vector2(900, 70), 32, Color.white, TextAlignmentOptions.Center);
+
+        Button classicBtn = CreateUIButton(panel.gameObject, "ClassicKitButton", "CLASSIC FRUITS", new Vector2(0, 200), new Vector2(520, 110), new Color(0.91f, 0.3f, 0.24f), Color.white);
+        Button oceanBtn = CreateUIButton(panel.gameObject, "OceanKitButton", "OCEAN WORLD", new Vector2(0, 60), new Vector2(520, 110), new Color(0.2f, 0.6f, 0.86f), Color.white);
+        Button skyBtn = CreateUIButton(panel.gameObject, "SkyKitButton", "SKY HIGH", new Vector2(0, -80), new Vector2(520, 110), new Color(0.95f, 0.6f, 0.1f), Color.white);
+
+        Button backBtn = CreateUIButton(panel.gameObject, "BackButton", "< BACK", new Vector2(0, -350), new Vector2(400, 95), new Color(0.48f, 0.56f, 0.65f), Color.white);
+
+        SerializedObject so = new SerializedObject(panel);
+        so.FindProperty("currentKitNameText").objectReferenceValue = currentKit;
+        so.FindProperty("classicKitButton").objectReferenceValue = classicBtn;
+        so.FindProperty("oceanKitButton").objectReferenceValue = oceanBtn;
+        so.FindProperty("skyKitButton").objectReferenceValue = skyBtn;
+        so.FindProperty("backButton").objectReferenceValue = backBtn;
+        so.ApplyModifiedProperties();
+    }
+
+    private static void BuildThemeShopPanel(GameObject parent)
+    {
+        ThemeShopPanel panel = EnsurePanel<ThemeShopPanel>(parent);
+        ClearChildren(panel.gameObject);
+
+        CreateUIImage(panel.gameObject, "Background", Vector2.zero, new Vector2(1080, 1920), new Color(0.1f, 0.11f, 0.16f, 1f));
+
+        CreateUIText(panel.gameObject, "TitleText", "THEME SHOP", new Vector2(0, 600), new Vector2(900, 120), 58, new Color(0.9f, 0.49f, 0.13f), TextAlignmentOptions.Center);
+        TMP_Text currentTheme = CreateUIText(panel.gameObject, "CurrentThemeNameText", "ACTIVE: DARK COSMIC", new Vector2(0, 470), new Vector2(900, 70), 32, Color.white, TextAlignmentOptions.Center);
+
+        Button darkBtn = CreateUIButton(panel.gameObject, "DarkThemeButton", "DARK COSMIC", new Vector2(0, 230), new Vector2(520, 95), new Color(0.2f, 0.25f, 0.35f), Color.white);
+        Button oceanBtn = CreateUIButton(panel.gameObject, "OceanThemeButton", "OCEAN DEPTH", new Vector2(0, 110), new Vector2(520, 95), new Color(0.1f, 0.5f, 0.6f), Color.white);
+        Button skyBtn = CreateUIButton(panel.gameObject, "SkyThemeButton", "SKY BREEZE", new Vector2(0, -10), new Vector2(520, 95), new Color(0.25f, 0.6f, 0.85f), Color.white);
+        Button sunsetBtn = CreateUIButton(panel.gameObject, "SunsetThemeButton", "SUNSET GLOW", new Vector2(0, -130), new Vector2(520, 95), new Color(0.55f, 0.25f, 0.6f), Color.white);
+
+        Button backBtn = CreateUIButton(panel.gameObject, "BackButton", "< BACK", new Vector2(0, -350), new Vector2(400, 95), new Color(0.48f, 0.56f, 0.65f), Color.white);
+
+        SerializedObject so = new SerializedObject(panel);
+        so.FindProperty("currentThemeNameText").objectReferenceValue = currentTheme;
+        so.FindProperty("darkThemeButton").objectReferenceValue = darkBtn;
+        so.FindProperty("oceanThemeButton").objectReferenceValue = oceanBtn;
+        so.FindProperty("skyThemeButton").objectReferenceValue = skyBtn;
+        so.FindProperty("sunsetThemeButton").objectReferenceValue = sunsetBtn;
+        so.FindProperty("backButton").objectReferenceValue = backBtn;
+        so.ApplyModifiedProperties();
+    }
+
+    private static void BuildSettingsPanel(GameObject parent)
+    {
+        SettingsPanel panel = EnsurePanel<SettingsPanel>(parent);
+        ClearChildren(panel.gameObject);
+
+        CreateUIImage(panel.gameObject, "BackgroundDim", Vector2.zero, new Vector2(1080, 1920), new Color(0f, 0f, 0f, 0.75f));
+        GameObject window = new GameObject("WindowBox");
+        window.transform.SetParent(panel.transform, false);
+        CreateUIImage(window, "WindowBg", Vector2.zero, new Vector2(750, 750), new Color(0.18f, 0.2f, 0.28f, 1f));
+
+        CreateUIText(window, "TitleText", "SETTINGS", new Vector2(0, 260), new Vector2(650, 90), 48, Color.white, TextAlignmentOptions.Center);
+        Button backBtn = CreateUIButton(window, "BackButton", "CLOSE", new Vector2(0, -220), new Vector2(380, 90), new Color(0.91f, 0.3f, 0.24f), Color.white);
+
+        SerializedObject so = new SerializedObject(panel);
+        so.FindProperty("backButton").objectReferenceValue = backBtn;
+        so.ApplyModifiedProperties();
+    }
+
+    private static void BuildGenericPopupPanel(GameObject parent)
+    {
+        GenericPopupPanel panel = EnsurePanel<GenericPopupPanel>(parent);
+        ClearChildren(panel.gameObject);
+
+        CreateUIImage(panel.gameObject, "BackgroundDim", Vector2.zero, new Vector2(1080, 1920), new Color(0f, 0f, 0f, 0.75f));
+        GameObject window = new GameObject("WindowBox");
+        window.transform.SetParent(panel.transform, false);
+        CreateUIImage(window, "WindowBg", Vector2.zero, new Vector2(750, 520), new Color(0.2f, 0.23f, 0.32f, 1f));
+
+        TMP_Text title = CreateUIText(window, "TitleText", "ALERT", new Vector2(0, 170), new Vector2(650, 80), 40, new Color(0.95f, 0.85f, 0.2f), TextAlignmentOptions.Center);
+        TMP_Text message = CreateUIText(window, "MessageText", "Popup notification message", new Vector2(0, 30), new Vector2(650, 140), 28, Color.white, TextAlignmentOptions.Center);
+
+        Button confirmBtn = CreateUIButton(window, "ConfirmButton", "OK", new Vector2(-150, -150), new Vector2(240, 80), new Color(0.18f, 0.8f, 0.44f), Color.white);
+        TMP_Text confirmTxt = confirmBtn.GetComponentInChildren<TMP_Text>();
+
+        Button cancelBtn = CreateUIButton(window, "CancelButton", "CANCEL", new Vector2(150, -150), new Vector2(240, 80), new Color(0.91f, 0.3f, 0.24f), Color.white);
+        TMP_Text cancelTxt = cancelBtn.GetComponentInChildren<TMP_Text>();
+
+        SerializedObject so = new SerializedObject(panel);
+        so.FindProperty("titleText").objectReferenceValue = title;
+        so.FindProperty("messageText").objectReferenceValue = message;
+        so.FindProperty("confirmButton").objectReferenceValue = confirmBtn;
+        so.FindProperty("confirmButtonText").objectReferenceValue = confirmTxt;
+        so.FindProperty("cancelButton").objectReferenceValue = cancelBtn;
+        so.FindProperty("cancelButtonText").objectReferenceValue = cancelTxt;
+        so.ApplyModifiedProperties();
+    }
+
+    #endregion
+
+    #region UGUI Helper Methods
+
+    private static T EnsurePanel<T>(GameObject parent) where T : UIBasePanel
+    {
+        string panelName = typeof(T).Name;
+        Transform child = parent.transform.Find(panelName);
+        GameObject panelObj;
+
+        if (child == null)
+        {
+            panelObj = new GameObject(panelName);
+            panelObj.transform.SetParent(parent.transform, false);
+            RectTransform rect = panelObj.AddComponent<RectTransform>();
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+        }
+        else
+        {
+            panelObj = child.gameObject;
+        }
+
+        T component = panelObj.GetComponent<T>();
+        if (component == null) component = panelObj.AddComponent<T>();
+
+        return component;
+    }
+
+    private static Image CreateUIImage(GameObject parent, string name, Vector2 pos, Vector2 size, Color color)
+    {
+        GameObject obj = new GameObject(name);
+        obj.transform.SetParent(parent.transform, false);
+
+        RectTransform rect = obj.AddComponent<RectTransform>();
+        rect.anchoredPosition = pos;
+        rect.sizeDelta = size;
+
+        Image img = obj.AddComponent<Image>();
+        img.color = color;
+        return img;
+    }
+
+    private static TMP_Text CreateUIText(GameObject parent, string name, string content, Vector2 pos, Vector2 size, float fontSize, Color color, TextAlignmentOptions align)
+    {
+        GameObject obj = new GameObject(name);
+        obj.transform.SetParent(parent.transform, false);
+
+        RectTransform rect = obj.AddComponent<RectTransform>();
+        rect.anchoredPosition = pos;
+        rect.sizeDelta = size;
+
+        TMP_Text text = obj.AddComponent<TextMeshProUGUI>();
+        text.text = content;
+        text.fontSize = fontSize;
+        text.color = color;
+        text.alignment = align;
+        return text;
+    }
+
+    private static Button CreateUIButton(GameObject parent, string name, string labelText, Vector2 pos, Vector2 size, Color bgColor, Color textColor)
+    {
+        GameObject obj = new GameObject(name);
+        obj.transform.SetParent(parent.transform, false);
+
+        RectTransform rect = obj.AddComponent<RectTransform>();
+        rect.anchoredPosition = pos;
+        rect.sizeDelta = size;
+
+        Image img = obj.AddComponent<Image>();
+        img.color = bgColor;
+
+        Button btn = obj.AddComponent<Button>();
+        btn.targetGraphic = img;
+
+        ColorBlock cb = btn.colors;
+        cb.highlightedColor = bgColor * 1.15f;
+        cb.pressedColor = bgColor * 0.85f;
+        btn.colors = cb;
+
+        // Label child text
+        CreateUIText(obj, "Text", labelText, Vector2.zero, size, size.y * 0.38f, textColor, TextAlignmentOptions.Center);
+
+        return btn;
+    }
+
+    private static void ClearChildren(GameObject parent)
+    {
+        for (int i = parent.transform.childCount - 1; i >= 0; i--)
+        {
+            UnityEngine.Object.DestroyImmediate(parent.transform.GetChild(i).gameObject);
+        }
+    }
+
+    #endregion
 }
 #endif

@@ -4,38 +4,35 @@ using UnityEngine.UI;
 
 /// <summary>
 /// Production-grade Main Menu UI Panel.
-/// Provides entry points for Play, Settings, High Score display, and Quit dialog.
+/// Provides entry points for Endless Play, Level 1 Campaign, Ball Kits, Themes, Settings, and Quit dialog.
 /// </summary>
 public class MainMenuPanel : UIBasePanel
 {
-    [Header("Primary Buttons")]
-    [SerializeField] private Button playButton;
+    [Header("Mode Buttons")]
+    [SerializeField] private Button playEndlessButton;
+    [SerializeField] private Button playLevel1Button;
+
+    [Header("Shop & Customization Buttons")]
+    [SerializeField] private Button ballKitsButton;
+    [SerializeField] private Button themesButton;
+
+    [Header("Secondary Buttons")]
     [SerializeField] private Button settingsButton;
     [SerializeField] private Button quitButton;
 
-    [Header("Player & Score Display (Optional)")]
-    [SerializeField] private TMP_Text playerNameText;
+    [Header("Score & Info Display")]
     [SerializeField] private TMP_Text highScoreText;
-    [SerializeField] private TMP_Text levelText;
 
     public override void Init(UIManager manager)
     {
         base.Init(manager);
 
-        if (playButton != null)
-        {
-            playButton.onClick.AddListener(OnPlayClicked);
-        }
-
-        if (settingsButton != null)
-        {
-            settingsButton.onClick.AddListener(OnSettingsClicked);
-        }
-
-        if (quitButton != null)
-        {
-            quitButton.onClick.AddListener(OnQuitClicked);
-        }
+        if (playEndlessButton != null) playEndlessButton.onClick.AddListener(OnPlayEndlessClicked);
+        if (playLevel1Button != null) playLevel1Button.onClick.AddListener(OnPlayLevel1Clicked);
+        if (ballKitsButton != null) ballKitsButton.onClick.AddListener(OnBallKitsClicked);
+        if (themesButton != null) themesButton.onClick.AddListener(OnThemesClicked);
+        if (settingsButton != null) settingsButton.onClick.AddListener(OnSettingsClicked);
+        if (quitButton != null) quitButton.onClick.AddListener(OnQuitClicked);
     }
 
     public override void OnShow()
@@ -46,15 +43,62 @@ public class MainMenuPanel : UIBasePanel
 
     public void UpdateDisplayInfo()
     {
-        // Optional hook for displaying player or game info
+        if (highScoreText != null)
+        {
+            int hs = PlayerPrefs.GetInt("BallMerge_HighScore", 0);
+            highScoreText.text = $"BEST SCORE: {hs}";
+        }
     }
 
-    private void OnPlayClicked()
+    private void OnPlayEndlessClicked()
     {
-        Debug.Log("[MainMenuPanel] Play button clicked.");
+        Debug.Log("[MainMenuPanel] Play Endless clicked.");
+        LoadLevelDataAndStart("LevelData_Endless.asset");
+    }
+
+    private void OnPlayLevel1Clicked()
+    {
+        Debug.Log("[MainMenuPanel] Play Level 1 clicked.");
+        LoadLevelDataAndStart("LevelData_Level1.asset");
+    }
+
+    private void LoadLevelDataAndStart(string assetFileName)
+    {
+#if UNITY_EDITOR
+        LevelDataSO data = UnityEditor.AssetDatabase.LoadAssetAtPath<LevelDataSO>($"Assets/Game/Data/{assetFileName}");
+        if (data != null)
+        {
+            GameplayController gc = FindAnyObjectByType<GameplayController>();
+            if (gc != null)
+            {
+                gc.InitializeLevel(data);
+            }
+        }
+#endif
+        if (uiManager != null)
+        {
+            uiManager.ShowPanel<GameplayHUDPanel>();
+        }
+
         if (GameManager.HasInstance)
         {
             GameManager.Instance.StartGame();
+        }
+    }
+
+    private void OnBallKitsClicked()
+    {
+        if (uiManager != null)
+        {
+            uiManager.ShowPanel<BallKitShopPanel>(false);
+        }
+    }
+
+    private void OnThemesClicked()
+    {
+        if (uiManager != null)
+        {
+            uiManager.ShowPanel<ThemeShopPanel>(false);
         }
     }
 

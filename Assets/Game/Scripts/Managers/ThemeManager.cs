@@ -20,6 +20,7 @@ public class ThemeManager : Singleton<ThemeManager>
     public static Action<ThemeDataSO> OnThemeChanged;
 
     public ThemeDataSO CurrentEquippedTheme => currentEquippedTheme;
+    public ThemeDataSO CurrentTheme => currentEquippedTheme;
     public List<ThemeDataSO> AvailableThemes => availableThemes;
 
     protected override void Awake()
@@ -88,6 +89,22 @@ public class ThemeManager : Singleton<ThemeManager>
         Debug.Log($"[ThemeManager] Successfully equipped Theme: {theme.themeName} ({theme.themeId})");
         ApplyCurrentTheme();
         OnThemeChanged?.Invoke(currentEquippedTheme);
+    }
+
+    /// <summary>
+    /// Equips an environment theme by string ID.
+    /// </summary>
+    public bool EquipTheme(string themeId)
+    {
+        return EquipThemeById(themeId);
+    }
+
+    /// <summary>
+    /// Applies an environment theme by string ID.
+    /// </summary>
+    public bool ApplyTheme(string themeId)
+    {
+        return EquipThemeById(themeId);
     }
 
     /// <summary>

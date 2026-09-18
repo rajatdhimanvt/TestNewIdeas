@@ -89,6 +89,14 @@ public class BallKitManager : Singleton<BallKitManager>
     /// <summary>
     /// Equips a Ball Kit by its unique string ID.
     /// </summary>
+    public bool EquipKit(string kitId)
+    {
+        return EquipKitById(kitId);
+    }
+
+    /// <summary>
+    /// Equips a Ball Kit by its unique string ID.
+    /// </summary>
     public bool EquipKitById(string kitId)
     {
         BallKitSO kit = availableKits.Find(k => k != null && k.kitId == kitId);
