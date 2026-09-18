@@ -80,13 +80,16 @@ public class BallMergeManager : Singleton<BallMergeManager>
 
             // Trigger score & audio events
             GameEvents.OnScoreChanged?.Invoke(nextTier.scoreValue);
+            GameEvents.OnScoreAddedAtPosition?.Invoke(nextTier.scoreValue, spawnPosition);
             GameEvents.OnPlaySFX?.Invoke(mergeSoundKey);
         }
         else
         {
             // Max tier merged! Award jackpot score
+            int jackpotScore = currentTier.scoreValue * 2;
             Debug.Log("[BallMergeManager] Max tier merged!");
-            GameEvents.OnScoreChanged?.Invoke(currentTier.scoreValue * 2);
+            GameEvents.OnScoreChanged?.Invoke(jackpotScore);
+            GameEvents.OnScoreAddedAtPosition?.Invoke(jackpotScore, spawnPosition);
             GameEvents.OnPlaySFX?.Invoke(mergeSoundKey);
         }
     }

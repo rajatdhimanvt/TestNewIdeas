@@ -1,5 +1,5 @@
 using System;
-
+using UnityEngine;
 /// <summary>
 /// Global type-safe event channels for decoupled game communication.
 /// Systems, Managers, UI, and Gameplay subscribe to events without direct coupling.
@@ -12,6 +12,7 @@ public static class GameEvents
 
     // Progression / Gameplay Events
     public static Action<int> OnScoreChanged;
+    public static Action<int, Vector3> OnScoreAddedAtPosition; // (scorePoints, worldPosition)
     public static Action<int> OnHighScoreChanged;
     public static Action<int> OnLevelStarted;
     public static Action<int, bool> OnLevelCompleted; // levelIndex, isSuccess
@@ -31,6 +32,7 @@ public static class GameEvents
         OnGameStateChanged = null;
         OnGamePaused = null;
         OnScoreChanged = null;
+        OnScoreAddedAtPosition = null;
         OnHighScoreChanged = null;
         OnLevelStarted = null;
         OnLevelCompleted = null;

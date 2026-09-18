@@ -12,6 +12,7 @@ public class GameplayController : MonoBehaviour
     [Header("Component References")]
     [SerializeField] private BallDropper dropper;
     [SerializeField] private ContainerBoundary container;
+    [SerializeField] private DangerLine dangerLine;
 
     [Header("Session State")]
     [SerializeField] private int currentScore = 0;
@@ -26,6 +27,7 @@ public class GameplayController : MonoBehaviour
     {
         if (dropper == null) dropper = FindAnyObjectByType<BallDropper>();
         if (container == null) container = FindAnyObjectByType<ContainerBoundary>();
+        if (dangerLine == null) dangerLine = FindAnyObjectByType<DangerLine>();
     }
 
     private void Start()
@@ -53,6 +55,11 @@ public class GameplayController : MonoBehaviour
         if (dropper != null)
         {
             dropper.Setup(levelData);
+        }
+
+        if (dangerLine != null)
+        {
+            dangerLine.Setup(levelData);
         }
     }
 
@@ -119,6 +126,11 @@ public class GameplayController : MonoBehaviour
             dropper.SetInputActive(true);
         }
 
+        if (dangerLine != null)
+        {
+            dangerLine.SetSessionActive(true);
+        }
+
         GameEvents.OnScoreChanged?.Invoke(0);
         GameEvents.OnHighScoreChanged?.Invoke(highScore);
     }
@@ -136,6 +148,11 @@ public class GameplayController : MonoBehaviour
         if (dropper != null)
         {
             dropper.SetInputActive(false);
+        }
+
+        if (dangerLine != null)
+        {
+            dangerLine.SetSessionActive(false);
         }
     }
 

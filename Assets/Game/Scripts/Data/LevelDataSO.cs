@@ -38,6 +38,14 @@ public class LevelDataSO : ScriptableObject
     [Range(0.2f, 2f)]
     public float wallThickness = 0.5f;
 
+    [Header("Danger Line / Overflow Limit")]
+    [Tooltip("Vertical Y position where overflow warning triggers")]
+    public float dangerLineY = 2.5f;
+
+    [Tooltip("Time in seconds a ball can stay above danger line before Game Over triggers")]
+    [Range(1f, 10f)]
+    public float dangerTimeLimit = 3.0f;
+
     /// <summary>
     /// Returns the next tier ball data for a successful merge.
     /// Returns null if the current ball is already at maximum tier.
