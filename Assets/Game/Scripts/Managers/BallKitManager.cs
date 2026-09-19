@@ -94,6 +94,21 @@ public class BallKitManager : Singleton<BallKitManager>
         return EquipKitById(kitId);
     }
 
+    public bool IsKitUnlocked(string kitId)
+    {
+        if (string.IsNullOrEmpty(kitId) || kitId == "classic_kit") return true;
+        return PlayerDataManager.HasInstance && PlayerDataManager.Instance.IsKitOwned(kitId);
+    }
+
+    public bool UnlockKit(string kitId, int coinCost)
+    {
+        if (PlayerDataManager.HasInstance)
+        {
+            return PlayerDataManager.Instance.UnlockKitWithCoins(kitId, coinCost);
+        }
+        return false;
+    }
+
     /// <summary>
     /// Equips a Ball Kit by its unique string ID.
     /// </summary>
@@ -102,6 +117,12 @@ public class BallKitManager : Singleton<BallKitManager>
         BallKitSO kit = availableKits.Find(k => k != null && k.kitId == kitId);
         if (kit != null)
         {
+            if (!IsKitUnlocked(kitId))
+            {
+                Debug.LogWarning($"[BallKitManager] Kit '{kitId}' is locked. Must be unlocked first.");
+                return false;
+            }
+
             EquipKit(kit);
             return true;
         }

@@ -4,7 +4,7 @@ using UnityEngine;
 /// Master controller for active Ball Merge gameplay session.
 /// Coordinates LevelData, BallDropper, ContainerBoundary, and score tracking.
 /// </summary>
-public class GameplayController : MonoBehaviour
+public class GameplayController : Singleton<GameplayController>
 {
     [Header("Level Configuration")]
     [SerializeField] private LevelDataSO levelData;
@@ -32,8 +32,9 @@ public class GameplayController : MonoBehaviour
     public bool LevelCompleted => levelCompleted;
     public LevelDataSO ActiveLevelData => levelData;
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
         if (dropper == null) dropper = FindAnyObjectByType<BallDropper>();
         if (container == null) container = FindAnyObjectByType<ContainerBoundary>();
         if (dangerLine == null) dangerLine = FindAnyObjectByType<DangerLine>();
@@ -46,6 +47,18 @@ public class GameplayController : MonoBehaviour
         {
             InitializeLevel(levelData);
         }
+
+        if (!GameManager.HasInstance || GameManager.Instance.CurrentState != GameState.InGame)
+        {
+            SetGameplayVisible(false);
+        }
+    }
+
+    public void SetGameplayVisible(bool visible)
+    {
+        if (container != null) container.gameObject.SetActive(visible);
+        if (dangerLine != null) dangerLine.gameObject.SetActive(visible);
+        if (dropper != null) dropper.gameObject.SetActive(visible);
     }
 
     public void InitializeLevel(LevelDataSO data)
@@ -90,13 +103,21 @@ public class GameplayController : MonoBehaviour
 
     private void HandleGameStateChanged(GameState newState, GameState oldState)
     {
-        if (newState == GameState.InGame && oldState != GameState.Paused)
+        if (newState == GameState.InGame)
         {
-            StartSession();
+            SetGameplayVisible(true);
+            if (oldState != GameState.Paused)
+            {
+                StartSession();
+            }
         }
-        else if (isSessionActive && (newState == GameState.GameOver || newState == GameState.MainMenu))
+        else if (newState == GameState.MainMenu || newState == GameState.Boot)
         {
-            EndSession();
+            SetGameplayVisible(false);
+            if (isSessionActive)
+            {
+                EndSession();
+            }
         }
     }
 
@@ -128,9 +149,45 @@ public class GameplayController : MonoBehaviour
 
     private void HandleScoreAdded(int points)
     {
+        AddScore(points);
+    }
+
+    public void StartLevelMode(int levelNum)
+    {
+        if (levelData == null)
+        {
+            levelData = ScriptableObject.CreateInstance<LevelDataSO>();
+        }
+
+        levelData.gameMode = GameMode.Level;
+        levelData.levelNumber = levelNum;
+        levelData.targetScore = 300 + (levelNum * 150);
+        levelData.maxDrops = Mathf.Max(15, 35 - (levelNum / 5));
+
+        InitializeLevel(levelData);
+    }
+
+    public void StartEndlessMode()
+    {
+        if (levelData == null)
+        {
+            levelData = ScriptableObject.CreateInstance<LevelDataSO>();
+        }
+
+        levelData.gameMode = GameMode.Endless;
+        InitializeLevel(levelData);
+    }
+
+    public void AddScore(int points)
+    {
         if (!isSessionActive) return;
 
         currentScore += points;
+
+        if (PlayerDataManager.HasInstance)
+        {
+            PlayerDataManager.Instance.AddCoins(points);
+        }
 
         if (currentScore > highScore)
         {
@@ -155,6 +212,25 @@ public class GameplayController : MonoBehaviour
         {
             levelCompleted = true;
             Debug.Log($"[GameplayController] Level {levelData.levelNumber} COMPLETED! Target score {levelData.targetScore} reached.");
+
+            int stars = 1;
+            if (PlayerDataManager.HasInstance)
+            {
+                stars = PlayerDataManager.Instance.SaveLevelCompletion(
+                    levelData.levelNumber, 
+                    currentScore, 
+                    remainingDrops, 
+                    levelData.maxDrops, 
+                    levelData.targetScore
+                );
+            }
+
+            LevelWinPanel winPanel = UIManager.HasInstance ? UIManager.Instance.GetPanel<LevelWinPanel>() : null;
+            if (winPanel != null)
+            {
+                winPanel.SetupLevelWin(levelData.levelNumber, currentScore, totalDropsUsed, stars);
+            }
+
             GameEvents.OnLevelCompleted?.Invoke(levelData.levelNumber, true);
             GameEvents.OnPlaySFX?.Invoke("LevelWin");
             return;

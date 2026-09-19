@@ -10,6 +10,7 @@ public class LevelWinPanel : UIBasePanel
 {
     [Header("Displays")]
     [SerializeField] private TMP_Text titleText;
+    [SerializeField] private TMP_Text starsText;
     [SerializeField] private TMP_Text scoreText;
     [SerializeField] private TMP_Text dropsUsedText;
 
@@ -17,6 +18,8 @@ public class LevelWinPanel : UIBasePanel
     [SerializeField] private Button nextLevelButton;
     [SerializeField] private Button replayButton;
     [SerializeField] private Button mainMenuButton;
+
+    private int currentLevelNumber = 1;
 
     public override void Init(UIManager manager)
     {
@@ -38,18 +41,32 @@ public class LevelWinPanel : UIBasePanel
         }
     }
 
+    public void SetupLevelWin(int levelNum, int finalScore, int dropsUsed, int stars)
+    {
+        currentLevelNumber = levelNum;
+
+        if (titleText != null) titleText.text = $"LEVEL {levelNum} PASSED!";
+
+        if (starsText != null)
+        {
+            string starStr = "";
+            for (int s = 0; s < 3; s++) starStr += s < stars ? "★ " : "☆ ";
+            starsText.text = starStr.Trim();
+        }
+
+        if (scoreText != null) scoreText.text = $"FINAL SCORE: {finalScore}";
+        if (dropsUsedText != null) dropsUsedText.text = $"DROPS USED: {dropsUsed}";
+    }
+
     public override void OnShow()
     {
         base.OnShow();
 
         GameplayController gc = FindAnyObjectByType<GameplayController>();
-        if (gc != null)
+        if (gc != null && gc.ActiveLevelData != null)
         {
-            if (gc.ActiveLevelData != null)
-            {
-                if (titleText != null) titleText.text = $"LEVEL {gc.ActiveLevelData.levelNumber} PASSED!";
-            }
-
+            currentLevelNumber = gc.ActiveLevelData.levelNumber;
+            if (titleText != null) titleText.text = $"LEVEL {currentLevelNumber} PASSED!";
             if (scoreText != null) scoreText.text = $"FINAL SCORE: {gc.CurrentScore}";
             if (dropsUsedText != null) dropsUsedText.text = $"DROPS USED: {gc.TotalDropsUsed}";
         }

@@ -107,6 +107,21 @@ public class ThemeManager : Singleton<ThemeManager>
         return EquipThemeById(themeId);
     }
 
+    public bool IsThemeUnlocked(string themeId)
+    {
+        if (string.IsNullOrEmpty(themeId) || themeId == "dark_theme") return true;
+        return PlayerDataManager.HasInstance && PlayerDataManager.Instance.IsThemeOwned(themeId);
+    }
+
+    public bool UnlockTheme(string themeId, int coinCost)
+    {
+        if (PlayerDataManager.HasInstance)
+        {
+            return PlayerDataManager.Instance.UnlockThemeWithCoins(themeId, coinCost);
+        }
+        return false;
+    }
+
     /// <summary>
     /// Equips an environment theme by string ID.
     /// </summary>
@@ -115,6 +130,12 @@ public class ThemeManager : Singleton<ThemeManager>
         ThemeDataSO theme = availableThemes.Find(t => t != null && t.themeId == themeId);
         if (theme != null)
         {
+            if (!IsThemeUnlocked(themeId))
+            {
+                Debug.LogWarning($"[ThemeManager] Theme '{themeId}' is locked. Must be unlocked first.");
+                return false;
+            }
+
             EquipTheme(theme);
             return true;
         }

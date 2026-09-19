@@ -33,7 +33,7 @@ public class GameManager : Singleton<GameManager>
     }
 
     /// <summary>
-    /// Predictable boot sequence ensuring all core subsystems are ready before gameplay starts.
+    /// Predictable boot sequence with 3-second Splash Screen loading bar.
     /// </summary>
     public IEnumerator BootSequenceRoutine()
     {
@@ -54,7 +54,7 @@ public class GameManager : Singleton<GameManager>
             AudioManager.Instance.Init();
         }
 
-        // 5. UI Manager initialization
+        // 3. UI Manager initialization & Splash Screen display
         UIManager uiManager = DependencyManager.Instance != null 
             ? DependencyManager.Instance.TryResolve<UIManager>() 
             : FindAnyObjectByType<UIManager>();
@@ -62,14 +62,40 @@ public class GameManager : Singleton<GameManager>
         if (uiManager != null)
         {
             uiManager.Init();
+            uiManager.ShowPanel<SplashScreenPanel>();
         }
 
         yield return null; // Ensure frame renders
 
+        // 4. Animate 3-Second Loading Bar on Splash Screen
+        SplashScreenPanel splash = uiManager != null ? uiManager.GetPanel<SplashScreenPanel>() : null;
+        float duration = 3.0f;
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float progress = Mathf.Clamp01(elapsed / duration);
+
+            if (splash != null)
+            {
+                splash.SetProgress(progress);
+            }
+
+            yield return null;
+        }
+
+        if (splash != null)
+        {
+            splash.SetProgress(1.0f);
+        }
+
+        yield return new WaitForSecondsRealtime(0.2f); // Short pause at 100%
+
         IsInitialized = true;
         Debug.Log("[GameManager] Boot sequence completed.");
 
-        // 6. Transition to Main Menu state
+        // 5. Transition to Main Menu state
         ChangeState(GameState.MainMenu);
     }
 

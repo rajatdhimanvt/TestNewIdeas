@@ -26,7 +26,10 @@ Assets/
 │       ├── Managers/             # Central game controllers & services
 │       │   ├── DependencyManager.cs # Service locator / DI container
 │       │   ├── GameManager.cs       # Master game lifecycle coordinator
-│       │   └── AudioManager.cs      # BGM & SFX playback + volume management
+│       │   ├── AudioManager.cs      # BGM & SFX playback + volume management
+│       │   ├── PlayerDataManager.cs # Coins, Level Stars & Shop persistence
+│       │   ├── BallKitManager.cs    # Active Ball Kit manager
+│       │   └── ThemeManager.cs      # Active Environment Theme manager
 │       ├── Gameplay/             # Ball Merge 2D physics mechanics
 │       │   ├── Ball.cs              # Physics entity & collision merge trigger
 │       │   ├── BallDropper.cs       # Horizontal aiming & drop release
@@ -37,10 +40,16 @@ Assets/
 │       │   ├── UIBasePanel.cs       # Base animated panel class
 │       │   ├── UIManager.cs         # Panel navigation, popups & overlays
 │       │   ├── MainMenuPanel.cs     # Main menu screen
+│       │   ├── LevelSelectionPanel.cs# 50-Level Campaign Grid Map
+│       │   ├── DailyRewardPanel.cs  # 7-Day Login Streak & Physics Spin Wheel
+│       │   ├── BallKitShopPanel.cs  # Ball Kits Shop screen
+│       │   ├── BallKitPreviewPanel.cs# Ball Kit Tiers Inspection Modal
+│       │   ├── ThemeShopPanel.cs    # Environment Theme Shop screen
+│       │   ├── ThemePreviewPanel.cs  # Environment Theme Live Preview Modal
 │       │   ├── SettingsPanel.cs     # Audio & volume controls
 │       │   └── GenericPopupPanel.cs # Reusable alert/confirm modal dialog
 │       ├── Editor/               # Unity Editor tools
-│       │   └── BallMergeAssetCreator.cs # 1-click default SO asset generator
+│       │   └── BallMergeAssetCreator.cs # 1-click default scene & UI canvas generator
 │       └── Utils/                # Utilities & helpers
 │           └── Singleton.cs         # Persistent & safe generic Singleton
 └── Plugins/
@@ -181,12 +190,37 @@ Yeh Suika-style 2D Physics Ball Merge game mechanics ka core architecture hai:
 - `GameEvents.OnScoreChanged` aur `GameEvents.OnPlaySFX("Merge")` trigger karta hai.
 
 ### 🔹 6. Level Asset Generator Tool (`Scripts/Editor/BallMergeAssetCreator.cs`)
-- Ek click me 6 tiers ki `BallDataSO` aur `LevelData_Default.asset` generate karne ka Editor tool:
-  👉 Unity Top Menu: **`Tools -> Ball Merge -> Generate Default Level Assets`**
+- Ek click me 6 tiers ki `BallDataSO`, Ball Kits, Themes, aur full Scene & Canvas visual hierarchy generate karne ka Editor tool:
+  👉 Unity Top Menu: **`Tools -> Ball Merge -> 2. Auto Setup Complete Game Scene`**
 
 ---
 
-## 🚀 6. Quick Start: New Game Kaise Banayein?
+## 🛍️ 6. Customization & Retention Systems (Play Store Release Ready)
+
+### 🔹 1. In-Game Coin Economy & Persistence (`PlayerDataManager.cs`)
+- Player ke Coins balance, Level Stars, High Scores, unlocked Kits/Themes, aur Daily Streak claim timestamps ka central persistence manager.
+- Merges karne par (`+1` to `+10` coins), Levels clear karne par (`+50` to `+150` coins), aur Daily Wheel spin se coins earn hote hain.
+- Coins se Shop mein locked Ball Kits aur Themes buy/unlock hoti hain.
+
+### 🔹 2. Ball Kits & Inspection Modal (`BallKitManager.cs`, `BallKitShopPanel.cs`, `BallKitPreviewPanel.cs`)
+- **Ball Kits**: Classic Fruits (Free), Ocean World (500 🪙), Sky High (1,000 🪙).
+- **`🔍 VIEW TIERS` Modal**: Inspect button click karne par kit ke sabhi 6 ball tiers ki full spec sheet (Score, Mass, Radius, `✔ DROPPABLE` vs `★ MERGE ONLY` status) dikhati hai.
+
+### 🔹 3. Environment Themes & Live Preview Modal (`ThemeManager.cs`, `ThemeShopPanel.cs`, `ThemePreviewPanel.cs`)
+- **Themes**: Dark Cosmic (Free), Ocean Depth (300 🪙), Sky Breeze (600 🪙), Sunset Glow (1,000 🪙).
+- **`🔍 PREVIEW` Modal**: Live mini gameplay box preview renders doing real-time background color, container wall colors, aur danger line warning colors rendering.
+
+### 🔹 4. 50-Level Campaign Progression Map (`LevelSelectionPanel.cs`)
+- **50-Level Grid**: Scrollable level selection map with unlocked/locked (`🔒`) states.
+- **1-3 Star Ratings (`⭐`, `⭐⭐`, `⭐⭐⭐`)**: Level completion efficiency ke hisaab se stars calculate aur save hote hain.
+
+### 🔹 5. Daily Rewards Calendar & Lucky Spin Wheel (`DailyRewardPanel.cs`)
+- **7-Day Login Streak**: Har roz login karke 50 se 1000 coins tak claim kar sakte hain.
+- **Physics Spin Wheel**: Smooth decelerating cubic ease-out rotation animation (`1 - (1-t)^3`) ke saath 8 reward slices (50, 100, 150, 200, 250, 300, 500, 1000 coins).
+
+---
+
+## 🚀 7. Quick Start: New Game Kaise Banayein?
 
 ### A. New Manager / Service Add Karna
 1. Apna manager class banayein:
@@ -223,7 +257,7 @@ Yeh Suika-style 2D Physics Ball Merge game mechanics ka core architecture hai:
 
 ---
 
-## 📋 Current Compilation Status
+## 📋 8. Current Compilation Status
 - **Unity Version:** Unity 6 (`6000.0.67f1`)
 - **Compile Errors:** **0 Errors** (Clean build)
 - **External Dependencies:** Only clean standard Unity UGUI, Input System, URP 2D, and DOTween (Clean configured).

@@ -11,6 +11,8 @@ public class MainMenuPanel : UIBasePanel
     [Header("Mode Buttons")]
     [SerializeField] private Button playEndlessButton;
     [SerializeField] private Button playLevel1Button;
+    [SerializeField] private Button levelMapButton;
+    [SerializeField] private Button dailyRewardButton;
 
     [Header("Shop & Customization Buttons")]
     [SerializeField] private Button ballKitsButton;
@@ -22,6 +24,7 @@ public class MainMenuPanel : UIBasePanel
 
     [Header("Score & Info Display")]
     [SerializeField] private TMP_Text highScoreText;
+    [SerializeField] private TMP_Text coinBalanceText;
 
     public override void Init(UIManager manager)
     {
@@ -29,10 +32,19 @@ public class MainMenuPanel : UIBasePanel
 
         if (playEndlessButton != null) playEndlessButton.onClick.AddListener(OnPlayEndlessClicked);
         if (playLevel1Button != null) playLevel1Button.onClick.AddListener(OnPlayLevel1Clicked);
+        if (levelMapButton != null) levelMapButton.onClick.AddListener(OnLevelMapClicked);
+        if (dailyRewardButton != null) dailyRewardButton.onClick.AddListener(OnDailyRewardClicked);
         if (ballKitsButton != null) ballKitsButton.onClick.AddListener(OnBallKitsClicked);
         if (themesButton != null) themesButton.onClick.AddListener(OnThemesClicked);
         if (settingsButton != null) settingsButton.onClick.AddListener(OnSettingsClicked);
         if (quitButton != null) quitButton.onClick.AddListener(OnQuitClicked);
+
+        PlayerDataManager.OnCoinsChanged += UpdateCoinDisplay;
+    }
+
+    private void OnDestroy()
+    {
+        PlayerDataManager.OnCoinsChanged -= UpdateCoinDisplay;
     }
 
     public override void OnShow()
@@ -47,6 +59,32 @@ public class MainMenuPanel : UIBasePanel
         {
             int hs = PlayerPrefs.GetInt("BallMerge_HighScore", 0);
             highScoreText.text = $"BEST SCORE: {hs}";
+        }
+
+        UpdateCoinDisplay(PlayerDataManager.HasInstance ? PlayerDataManager.Instance.Coins : 0);
+    }
+
+    private void UpdateCoinDisplay(int coins)
+    {
+        if (coinBalanceText != null)
+        {
+            coinBalanceText.text = $"🪙 {coins:N0}";
+        }
+    }
+
+    private void OnLevelMapClicked()
+    {
+        if (uiManager != null)
+        {
+            uiManager.ShowPanel<LevelSelectionPanel>(true);
+        }
+    }
+
+    private void OnDailyRewardClicked()
+    {
+        if (uiManager != null)
+        {
+            uiManager.ShowPanel<DailyRewardPanel>(false);
         }
     }
 

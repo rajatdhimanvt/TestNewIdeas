@@ -16,6 +16,11 @@ public class BallKitShopPanel : UIBasePanel
     [SerializeField] private Button oceanKitButton;
     [SerializeField] private Button skyKitButton;
 
+    [Header("Inspect Kit Buttons")]
+    [SerializeField] private Button inspectClassicButton;
+    [SerializeField] private Button inspectOceanButton;
+    [SerializeField] private Button inspectSkyButton;
+
     [Header("Navigation")]
     [SerializeField] private Button backButton;
 
@@ -26,6 +31,10 @@ public class BallKitShopPanel : UIBasePanel
         if (classicKitButton != null) classicKitButton.onClick.AddListener(() => EquipKit("classic_kit"));
         if (oceanKitButton != null) oceanKitButton.onClick.AddListener(() => EquipKit("ocean_kit"));
         if (skyKitButton != null) skyKitButton.onClick.AddListener(() => EquipKit("sky_kit"));
+
+        if (inspectClassicButton != null) inspectClassicButton.onClick.AddListener(() => OpenKitPreview("classic_kit"));
+        if (inspectOceanButton != null) inspectOceanButton.onClick.AddListener(() => OpenKitPreview("ocean_kit"));
+        if (inspectSkyButton != null) inspectSkyButton.onClick.AddListener(() => OpenKitPreview("sky_kit"));
 
         if (backButton != null)
         {
@@ -46,19 +55,68 @@ public class BallKitShopPanel : UIBasePanel
             BallKitSO active = BallKitManager.Instance.CurrentEquippedKit;
             currentKitNameText.text = active != null ? $"ACTIVE: {active.kitName.ToUpper()}" : "ACTIVE: CLASSIC FRUITS";
         }
+
+        UpdateKitButtonState("classic_kit", classicKitButton, 0);
+        UpdateKitButtonState("ocean_kit", oceanKitButton, 500);
+        UpdateKitButtonState("sky_kit", skyKitButton, 1000);
+    }
+
+    private void UpdateKitButtonState(string kitId, Button btn, int coinCost)
+    {
+        if (btn == null) return;
+
+        bool isUnlocked = BallKitManager.HasInstance && BallKitManager.Instance.IsKitUnlocked(kitId);
+        bool isEquipped = BallKitManager.HasInstance && BallKitManager.Instance.CurrentEquippedKit != null && BallKitManager.Instance.CurrentEquippedKit.kitId == kitId;
+
+        TMP_Text txt = btn.GetComponentInChildren<TMP_Text>();
+        if (txt != null)
+        {
+            if (isEquipped) txt.text = "EQUIPPED";
+            else if (isUnlocked) txt.text = "EQUIP";
+            else txt.text = $"🔒 UNLOCK\n({coinCost} 🪙)";
+        }
+    }
+
+    public void OpenKitPreview(string kitId)
+    {
+        if (!BallKitManager.HasInstance || uiManager == null) return;
+
+        BallKitSO kit = BallKitManager.Instance.AvailableKits.Find(k => k != null && k.kitId == kitId);
+        if (kit != null)
+        {
+            BallKitPreviewPanel previewPanel = uiManager.GetPanel<BallKitPreviewPanel>();
+            if (previewPanel != null)
+            {
+                previewPanel.SetupPreview(kit);
+                uiManager.ShowPanel<BallKitPreviewPanel>(false);
+            }
+        }
     }
 
     private void EquipKit(string kitId)
     {
-        if (BallKitManager.HasInstance)
+        if (!BallKitManager.HasInstance) return;
+
+        bool isUnlocked = BallKitManager.Instance.IsKitUnlocked(kitId);
+        int cost = kitId == "ocean_kit" ? 500 : (kitId == "sky_kit" ? 1000 : 0);
+
+        if (!isUnlocked)
         {
-            BallKitManager.Instance.EquipKit(kitId);
-            RefreshDisplay();
-            if (uiManager != null)
+            if (BallKitManager.Instance.UnlockKit(kitId, cost))
             {
-                uiManager.ShowPopup("Kit Equipped!", $"Successfully equipped ball kit '{kitId}'.");
+                BallKitManager.Instance.EquipKit(kitId);
+                RefreshDisplay();
+                if (uiManager != null) uiManager.ShowPopup("Kit Unlocked!", $"Unlocked and equipped '{kitId}'!");
             }
+            else
+            {
+                if (uiManager != null) uiManager.ShowPopup("Insufficient Coins", $"You need {cost} Coins to unlock this kit!");
+            }
+            return;
         }
+
+        BallKitManager.Instance.EquipKit(kitId);
+        RefreshDisplay();
     }
 
     private void OnBackClicked()
