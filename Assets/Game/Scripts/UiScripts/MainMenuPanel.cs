@@ -64,17 +64,23 @@ public class MainMenuPanel : UIBasePanel
 
     private void LoadLevelDataAndStart(string assetFileName)
     {
+        LevelDataSO data = null;
 #if UNITY_EDITOR
-        LevelDataSO data = UnityEditor.AssetDatabase.LoadAssetAtPath<LevelDataSO>($"Assets/Game/Data/{assetFileName}");
-        if (data != null)
+        data = UnityEditor.AssetDatabase.LoadAssetAtPath<LevelDataSO>($"Assets/Game/Data/{assetFileName}");
+#endif
+        GameplayController gc = FindAnyObjectByType<GameplayController>();
+        if (gc != null)
         {
-            GameplayController gc = FindAnyObjectByType<GameplayController>();
-            if (gc != null)
+            if (data != null)
             {
                 gc.InitializeLevel(data);
             }
+            else if (gc.ActiveLevelData != null)
+            {
+                gc.InitializeLevel(gc.ActiveLevelData);
+            }
         }
-#endif
+
         if (uiManager != null)
         {
             uiManager.ShowPanel<GameplayHUDPanel>();
@@ -90,7 +96,7 @@ public class MainMenuPanel : UIBasePanel
     {
         if (uiManager != null)
         {
-            uiManager.ShowPanel<BallKitShopPanel>(false);
+            uiManager.ShowPanel<BallKitShopPanel>(true);
         }
     }
 
@@ -98,7 +104,7 @@ public class MainMenuPanel : UIBasePanel
     {
         if (uiManager != null)
         {
-            uiManager.ShowPanel<ThemeShopPanel>(false);
+            uiManager.ShowPanel<ThemeShopPanel>(true);
         }
     }
 
@@ -106,7 +112,7 @@ public class MainMenuPanel : UIBasePanel
     {
         if (uiManager != null)
         {
-            uiManager.ShowPanel<SettingsPanel>(false);
+            uiManager.ShowPanel<SettingsPanel>(true);
         }
     }
 

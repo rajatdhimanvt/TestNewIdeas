@@ -392,6 +392,7 @@ public static class BallMergeAssetCreator
         // Build Visual Hierarchy for Panels
         BuildMainMenuPanel(uiObj);
         BuildGameplayHUDPanel(uiObj);
+        BuildPausePanel(uiObj);
         BuildGameOverPanel(uiObj);
         BuildLevelWinPanel(uiObj);
         BuildBallKitShopPanel(uiObj);
@@ -486,6 +487,33 @@ public static class BallMergeAssetCreator
         so.FindProperty("nextBallNameText").objectReferenceValue = nextBallName;
         so.FindProperty("nextBallImage").objectReferenceValue = nextBallImg;
         so.FindProperty("pauseButton").objectReferenceValue = pause;
+        so.ApplyModifiedProperties();
+    }
+
+    private static void BuildPausePanel(GameObject parent)
+    {
+        PausePanel panel = EnsurePanel<PausePanel>(parent);
+        ClearChildren(panel.gameObject);
+
+        // Dim & Window Box
+        CreateUIImage(panel.gameObject, "BackgroundDim", Vector2.zero, new Vector2(1080, 1920), new Color(0f, 0f, 0f, 0.75f));
+        GameObject window = new GameObject("WindowBox");
+        window.transform.SetParent(panel.transform, false);
+        CreateUIImage(window, "WindowBg", Vector2.zero, new Vector2(850, 950), new Color(0.15f, 0.17f, 0.24f, 1f));
+
+        TMP_Text title = CreateUIText(window, "TitleText", "GAME PAUSED", new Vector2(0, 330), new Vector2(750, 100), 54, new Color(0.2f, 0.8f, 1f), TextAlignmentOptions.Center);
+
+        Button resume = CreateUIButton(window, "ResumeButton", "RESUME", new Vector2(0, 180), new Vector2(480, 95), new Color(0.18f, 0.8f, 0.44f), Color.white);
+        Button restart = CreateUIButton(window, "RestartButton", "REPLAY", new Vector2(0, 60), new Vector2(480, 95), new Color(0.2f, 0.6f, 0.86f), Color.white);
+        Button settings = CreateUIButton(window, "SettingsButton", "SETTINGS", new Vector2(0, -60), new Vector2(480, 95), new Color(0.61f, 0.35f, 0.71f), Color.white);
+        Button mainMenu = CreateUIButton(window, "MainMenuButton", "MAIN MENU", new Vector2(0, -180), new Vector2(480, 95), new Color(0.91f, 0.3f, 0.24f), Color.white);
+
+        SerializedObject so = new SerializedObject(panel);
+        so.FindProperty("titleText").objectReferenceValue = title;
+        so.FindProperty("resumeButton").objectReferenceValue = resume;
+        so.FindProperty("restartButton").objectReferenceValue = restart;
+        so.FindProperty("settingsButton").objectReferenceValue = settings;
+        so.FindProperty("mainMenuButton").objectReferenceValue = mainMenu;
         so.ApplyModifiedProperties();
     }
 

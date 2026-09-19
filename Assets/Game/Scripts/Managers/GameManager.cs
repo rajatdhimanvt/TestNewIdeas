@@ -111,19 +111,28 @@ public class GameManager : Singleton<GameManager>
                 IsPaused = false;
                 if (uiManager != null)
                 {
-                    // If you have a gameplay HUD panel, show it here
+                    uiManager.ShowPanel<GameplayHUDPanel>();
                 }
+                GameEvents.OnGamePaused?.Invoke(false);
                 break;
 
             case GameState.Paused:
                 Time.timeScale = 0f;
                 IsPaused = true;
+                if (uiManager != null)
+                {
+                    uiManager.ShowPanel<PausePanel>();
+                }
                 GameEvents.OnGamePaused?.Invoke(true);
                 break;
 
             case GameState.GameOver:
                 Time.timeScale = 1f;
                 IsPaused = false;
+                if (uiManager != null)
+                {
+                    uiManager.ShowPanel<GameOverPanel>();
+                }
                 break;
         }
     }
@@ -168,19 +177,47 @@ public class GameManager : Singleton<GameManager>
     }
 
     /// <summary>
-    /// Returns to main menu state.
+    /// Returns to main menu state and clears current game session.
     /// </summary>
     public void ReturnToMainMenu()
     {
+        Time.timeScale = 1f;
+        IsPaused = false;
+
+        GameplayController gc = FindAnyObjectByType<GameplayController>();
+        if (gc != null)
+        {
+            gc.EndSession();
+        }
+
         ChangeState(GameState.MainMenu);
     }
 
     /// <summary>
-    /// Restarts current game level.
+    /// Restarts current game level immediately from the beginning.
     /// </summary>
     public void RestartGame()
     {
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        Time.timeScale = 1f;
+        IsPaused = false;
+        currentState = GameState.InGame;
+
+        GameplayController gc = FindAnyObjectByType<GameplayController>();
+        if (gc != null)
+        {
+            gc.StartSession();
+        }
+
+        UIManager uiManager = DependencyManager.Instance != null 
+            ? DependencyManager.Instance.TryResolve<UIManager>() 
+            : FindAnyObjectByType<UIManager>();
+
+        if (uiManager != null)
+        {
+            uiManager.ShowPanel<GameplayHUDPanel>();
+        }
+
+        GameEvents.OnGamePaused?.Invoke(false);
     }
 
     /// <summary>

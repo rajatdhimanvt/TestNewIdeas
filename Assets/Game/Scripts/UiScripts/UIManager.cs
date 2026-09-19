@@ -127,16 +127,24 @@ public class UIManager : Singleton<UIManager>
             return null;
         }
 
-        if (hideOld && currentPanelType != null && panels.TryGetValue(currentPanelType, out UIBasePanel oldPanel))
+        if (panelType == typeof(MainMenuPanel))
         {
-            oldPanel.OnHide();
-            if (currentPanelType != panelType)
-            {
-                panelHistory.Push(currentPanelType);
-            }
+            panelHistory.Clear();
         }
 
-        currentPanelType = panelType;
+        if (hideOld)
+        {
+            if (currentPanelType != null && panels.TryGetValue(currentPanelType, out UIBasePanel oldPanel))
+            {
+                oldPanel.OnHide();
+                if (currentPanelType != panelType && panelType != typeof(MainMenuPanel))
+                {
+                    panelHistory.Push(currentPanelType);
+                }
+            }
+            currentPanelType = panelType;
+        }
+
         targetPanel.OnShow();
         return targetPanel;
     }
@@ -150,6 +158,10 @@ public class UIManager : Singleton<UIManager>
         {
             Type previous = panelHistory.Pop();
             ShowPanel(previous, true);
+        }
+        else if (currentPanelType != typeof(MainMenuPanel))
+        {
+            ShowPanel<MainMenuPanel>(true);
         }
     }
 

@@ -96,6 +96,9 @@ public class SettingsPanel : UIBasePanel
 
     private void OnBackClicked()
     {
-        uiManager.GoBack();
+        if (uiManager != null)
+        {
+            uiManager.GoBack();
+        }
     }
 }

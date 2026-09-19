@@ -148,13 +148,13 @@ public class GameplayHUDPanel : UIBasePanel
 
     private void OnPauseClicked()
     {
-        if (uiManager != null)
-        {
-            uiManager.ShowPanel<SettingsPanel>(false);
-        }
         if (GameManager.HasInstance)
         {
-            GameManager.Instance.TogglePause();
+            GameManager.Instance.SetPause(true);
+        }
+        if (uiManager != null)
+        {
+            uiManager.ShowPanel<PausePanel>(true);
         }
     }
 }

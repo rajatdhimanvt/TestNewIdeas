@@ -90,7 +90,7 @@ public class GameplayController : MonoBehaviour
 
     private void HandleGameStateChanged(GameState newState, GameState oldState)
     {
-        if (newState == GameState.InGame)
+        if (newState == GameState.InGame && oldState != GameState.Paused)
         {
             StartSession();
         }
@@ -171,10 +171,27 @@ public class GameplayController : MonoBehaviour
     }
 
     /// <summary>
+    /// Destroys all active balls in the scene.
+    /// </summary>
+    public void ClearAllBalls()
+    {
+        Ball[] activeBalls = FindObjectsByType<Ball>(FindObjectsSortMode.None);
+        for (int i = 0; i < activeBalls.Length; i++)
+        {
+            if (activeBalls[i] != null)
+            {
+                Destroy(activeBalls[i].gameObject);
+            }
+        }
+    }
+
+    /// <summary>
     /// Starts an active gameplay session.
     /// </summary>
     public virtual void StartSession()
     {
+        ClearAllBalls();
+
         currentScore = 0;
         totalDropsUsed = 0;
         levelCompleted = false;
@@ -193,13 +210,15 @@ public class GameplayController : MonoBehaviour
             Debug.Log("[GameplayController] Started ENDLESS Mode: Unlimited drops.");
         }
 
-        if (dropper != null)
+        if (dropper != null && levelData != null)
         {
+            dropper.Setup(levelData);
             dropper.SetInputActive(true);
         }
 
-        if (dangerLine != null)
+        if (dangerLine != null && levelData != null)
         {
+            dangerLine.Setup(levelData);
             dangerLine.SetSessionActive(true);
         }
 
@@ -207,17 +226,19 @@ public class GameplayController : MonoBehaviour
         GameEvents.OnHighScoreChanged?.Invoke(highScore);
     }
 
-        
-
     /// <summary>
-    /// Ends active gameplay session.
+    /// Ends active gameplay session and clears container.
     /// </summary>
     public virtual void EndSession()
     {
-        if (!isSessionActive) return;
+        ClearAllBalls();
 
         isSessionActive = false;
-        Debug.Log($"[GameplayController] Ball Merge session ended. Score: {currentScore}");
+        currentScore = 0;
+        totalDropsUsed = 0;
+        levelCompleted = false;
+
+        Debug.Log("[GameplayController] Ball Merge session ended and container cleared.");
 
         if (dropper != null)
         {
@@ -226,6 +247,7 @@ public class GameplayController : MonoBehaviour
 
         if (dangerLine != null)
         {
+            dangerLine.ResetTimer();
             dangerLine.SetSessionActive(false);
         }
     }

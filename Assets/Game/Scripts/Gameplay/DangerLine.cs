@@ -175,7 +175,7 @@ public class DangerLine : MonoBehaviour
         ballsInZone.RemoveWhere(b => b == null || !b.gameObject.activeInHierarchy || b.IsMerging);
 
         // Check if any settled dropped ball is inside danger zone
-        bool hasSettledBallInDanger = FalseHasSettledBallInDanger();
+        bool hasSettledBallInDanger = HasSettledBallInDanger();
 
         if (hasSettledBallInDanger)
         {
@@ -219,7 +219,7 @@ public class DangerLine : MonoBehaviour
         }
     }
 
-    private bool FalseHasSettledBallInDanger()
+    private bool HasSettledBallInDanger()
     {
         foreach (Ball ball in ballsInZone)
         {

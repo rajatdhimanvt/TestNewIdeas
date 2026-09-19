@@ -16,6 +16,7 @@ public class BallDropper : MonoBehaviour
     [SerializeField] private BallDataSO nextBallData;
     [SerializeField] private bool canDrop = true;
     [SerializeField] private bool isInputActive = true;
+    private float ignoreInputTimer = 0f;
 
     private float minX = -2f;
     private float maxX = 2f;
@@ -42,6 +43,7 @@ public class BallDropper : MonoBehaviour
     public void Setup(LevelDataSO data)
     {
         levelData = data;
+        ignoreInputTimer = 0.25f;
         UpdateBoundaries();
         PrepareInitialBalls();
     }
@@ -84,6 +86,14 @@ public class BallDropper : MonoBehaviour
     private void Update()
     {
         if (!isInputActive || levelData == null) return;
+        if (GameManager.HasInstance && GameManager.Instance.CurrentState != GameState.InGame) return;
+
+        if (ignoreInputTimer > 0f)
+        {
+            ignoreInputTimer -= Time.unscaledDeltaTime;
+            HandleAimingInput();
+            return;
+        }
 
         HandleAimingInput();
         HandleDropInput();
@@ -108,6 +118,13 @@ public class BallDropper : MonoBehaviour
 
     private void HandleDropInput()
     {
+        // Ignore drop input if pointer or touch is interacting with UI elements
+        if (UnityEngine.EventSystems.EventSystem.current != null)
+        {
+            if (UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject()) return;
+            if (Input.touchCount > 0 && UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject(Input.GetTouch(0).fingerId)) return;
+        }
+
         // Drop on mouse click or screen tap release
         if (Input.GetMouseButtonUp(0) && canDrop && currentBall != null)
         {
@@ -143,5 +160,9 @@ public class BallDropper : MonoBehaviour
     public void SetInputActive(bool active)
     {
         isInputActive = active;
+        if (active)
+        {
+            ignoreInputTimer = 0.25f;
+        }
     }
 }
