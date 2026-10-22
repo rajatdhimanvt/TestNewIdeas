@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using TMPro;
 using UnityEditor;
 using UnityEngine;
@@ -361,8 +362,37 @@ public static class BallMergeAssetCreator
         Debug.Log("[BallMergeAssetCreator] COMPLETE GAME SCENE & UI CANVAS GENERATED SUCCESSFULLY!");
     }
 
+
+    private static Sprite s_btnGreen;
+    private static Sprite s_btnYellow;
+    private static Sprite s_btnBlue;
+    private static Sprite s_btnRed;
+    private static Sprite s_frameBlue;
+    private static Sprite s_frameCyan;
+    private static Sprite s_framePurple;
+    private static Sprite s_bannerBlue;
+
+    private static void LoadUISprites()
+    {
+        string p2 = "Assets/Game/Sprites/Full sprite sheet/UI-pack_Sprite_2.png";
+        AssetDatabase.ImportAsset(p2, ImportAssetOptions.ForceUpdate);
+        Sprite[] pack2 = AssetDatabase.LoadAllAssetsAtPath(p2).OfType<Sprite>().ToArray();
+
+        s_btnGreen = pack2.FirstOrDefault(s => s.name == "UI-pack_Sprite_2_16");
+        s_btnYellow = pack2.FirstOrDefault(s => s.name == "UI-pack_Sprite_2_9");
+        s_btnBlue = pack2.FirstOrDefault(s => s.name == "UI-pack_Sprite_2_10");
+        s_btnRed = pack2.FirstOrDefault(s => s.name == "UI-pack_Sprite_2_17");
+        s_frameBlue = pack2.FirstOrDefault(s => s.name == "UI-pack_Sprite_2_0");
+        s_frameCyan = pack2.FirstOrDefault(s => s.name == "UI-pack_Sprite_2_4");
+        s_framePurple = pack2.FirstOrDefault(s => s.name == "UI-pack_Sprite_2_2");
+        s_bannerBlue = pack2.FirstOrDefault(s => s.name == "UI-pack_Sprite_2_5");
+
+        Debug.Log($"[BallMergeAssetCreator] Loaded {pack2.Length} sprites: Green={s_btnGreen != null}, Yellow={s_btnYellow != null}, Blue={s_btnBlue != null}, Red={s_btnRed != null}, FrameBlue={s_frameBlue != null}, FrameCyan={s_frameCyan != null}");
+    }
+
     private static void SetupUICanvas()
     {
+        LoadUISprites();
         // 1. Setup EventSystem
         if (UnityEngine.Object.FindAnyObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
         {
@@ -453,9 +483,9 @@ public static class BallMergeAssetCreator
         TMP_Text progressTxt = CreateUIText(panel.gameObject, "ProgressText", "LOADING... 0%", new Vector2(0, -470), new Vector2(600, 50), 26, Color.white, TextAlignmentOptions.Center);
 
         SerializedObject so = new SerializedObject(panel);
-        so.FindProperty("titleText").objectReferenceValue = title;
-        so.FindProperty("loadingSlider").objectReferenceValue = slider;
-        so.FindProperty("progressText").objectReferenceValue = progressTxt;
+        SafeSetProperty(so, "titleText", title);
+        SafeSetProperty(so, "loadingSlider", slider);
+        SafeSetProperty(so, "progressText", progressTxt);
         so.ApplyModifiedProperties();
     }
 
@@ -520,16 +550,16 @@ public static class BallMergeAssetCreator
 
         // Auto-wire SerializedObject
         SerializedObject so = new SerializedObject(panel);
-        so.FindProperty("playEndlessButton").objectReferenceValue = playEndless;
-        so.FindProperty("playLevel1Button").objectReferenceValue = playLevel1;
-        so.FindProperty("levelMapButton").objectReferenceValue = levelMapButton;
-        so.FindProperty("dailyRewardButton").objectReferenceValue = dailyRewardButton;
-        so.FindProperty("ballKitsButton").objectReferenceValue = ballKits;
-        so.FindProperty("themesButton").objectReferenceValue = themes;
-        so.FindProperty("settingsButton").objectReferenceValue = settings;
-        so.FindProperty("quitButton").objectReferenceValue = quit;
-        so.FindProperty("highScoreText").objectReferenceValue = highScore;
-        so.FindProperty("coinBalanceText").objectReferenceValue = coinBalanceText;
+        SafeSetProperty(so, "playEndlessButton", playEndless);
+        SafeSetProperty(so, "playLevel1Button", playLevel1);
+        SafeSetProperty(so, "levelMapButton", levelMapButton);
+        SafeSetProperty(so, "dailyRewardButton", dailyRewardButton);
+        SafeSetProperty(so, "ballKitsButton", ballKits);
+        SafeSetProperty(so, "themesButton", themes);
+        SafeSetProperty(so, "settingsButton", settings);
+        SafeSetProperty(so, "quitButton", quit);
+        SafeSetProperty(so, "highScoreText", highScore);
+        SafeSetProperty(so, "coinBalanceText", coinBalanceText);
         so.ApplyModifiedProperties();
     }
 
@@ -582,10 +612,10 @@ public static class BallMergeAssetCreator
         Button backButton = CreateUIButton(panel.gameObject, "BackButton", "⬅ BACK TO MENU", new Vector2(0, -600), new Vector2(500, 95), new Color(0.25f, 0.3f, 0.4f), Color.white);
 
         SerializedObject so = new SerializedObject(panel);
-        so.FindProperty("totalStarsText").objectReferenceValue = totalStarsText;
-        so.FindProperty("coinBalanceText").objectReferenceValue = coinBalanceText;
-        so.FindProperty("levelGridContainer").objectReferenceValue = contentObj.transform;
-        so.FindProperty("backButton").objectReferenceValue = backButton;
+        SafeSetProperty(so, "totalStarsText", totalStarsText);
+        SafeSetProperty(so, "coinBalanceText", coinBalanceText);
+        SafeSetProperty(so, "levelGridContainer", contentObj.transform);
+        SafeSetProperty(so, "backButton", backButton);
         so.ApplyModifiedProperties();
     }
 
@@ -628,14 +658,14 @@ public static class BallMergeAssetCreator
         Button closeButton = CreateUIButton(panel.gameObject, "CloseButton", "⬅ BACK TO MENU", new Vector2(0, -580), new Vector2(500, 95), new Color(0.25f, 0.3f, 0.4f), Color.white);
 
         SerializedObject so = new SerializedObject(panel);
-        so.FindProperty("wheelTransform").objectReferenceValue = wheelContainer.transform;
-        so.FindProperty("spinButton").objectReferenceValue = spinButton;
-        so.FindProperty("spinButtonText").objectReferenceValue = spinButtonText;
-        so.FindProperty("statusText").objectReferenceValue = statusText;
-        so.FindProperty("streakDayText").objectReferenceValue = streakDayText;
-        so.FindProperty("claimStreakButton").objectReferenceValue = claimStreakButton;
-        so.FindProperty("claimStreakText").objectReferenceValue = claimStreakText;
-        so.FindProperty("closeButton").objectReferenceValue = closeButton;
+        SafeSetProperty(so, "wheelTransform", wheelContainer.transform);
+        SafeSetProperty(so, "spinButton", spinButton);
+        SafeSetProperty(so, "spinButtonText", spinButtonText);
+        SafeSetProperty(so, "statusText", statusText);
+        SafeSetProperty(so, "streakDayText", streakDayText);
+        SafeSetProperty(so, "claimStreakButton", claimStreakButton);
+        SafeSetProperty(so, "claimStreakText", claimStreakText);
+        SafeSetProperty(so, "closeButton", closeButton);
         so.ApplyModifiedProperties();
     }
 
@@ -667,14 +697,14 @@ public static class BallMergeAssetCreator
 
         // Auto-wire SerializedObject
         SerializedObject so = new SerializedObject(panel);
-        so.FindProperty("scoreText").objectReferenceValue = score;
-        so.FindProperty("highScoreText").objectReferenceValue = highScore;
-        so.FindProperty("modeTitleText").objectReferenceValue = modeTitle;
-        so.FindProperty("dropsContainer").objectReferenceValue = dropsObj;
-        so.FindProperty("dropsText").objectReferenceValue = drops;
-        so.FindProperty("nextBallNameText").objectReferenceValue = nextBallName;
-        so.FindProperty("nextBallImage").objectReferenceValue = nextBallImg;
-        so.FindProperty("pauseButton").objectReferenceValue = pause;
+        SafeSetProperty(so, "scoreText", score);
+        SafeSetProperty(so, "highScoreText", highScore);
+        SafeSetProperty(so, "modeTitleText", modeTitle);
+        SafeSetProperty(so, "dropsContainer", dropsObj);
+        SafeSetProperty(so, "dropsText", drops);
+        SafeSetProperty(so, "nextBallNameText", nextBallName);
+        SafeSetProperty(so, "nextBallImage", nextBallImg);
+        SafeSetProperty(so, "pauseButton", pause);
         so.ApplyModifiedProperties();
     }
 
@@ -695,11 +725,11 @@ public static class BallMergeAssetCreator
         Button mainMenu = CreateUIButton(window, "MainMenuButton", "MAIN MENU", new Vector2(0, -180), new Vector2(480, 95), new Color(0.91f, 0.3f, 0.24f), Color.white);
 
         SerializedObject so = new SerializedObject(panel);
-        so.FindProperty("titleText").objectReferenceValue = title;
-        so.FindProperty("resumeButton").objectReferenceValue = resume;
-        so.FindProperty("restartButton").objectReferenceValue = restart;
-        so.FindProperty("settingsButton").objectReferenceValue = settings;
-        so.FindProperty("mainMenuButton").objectReferenceValue = mainMenu;
+        SafeSetProperty(so, "titleText", title);
+        SafeSetProperty(so, "resumeButton", resume);
+        SafeSetProperty(so, "restartButton", restart);
+        SafeSetProperty(so, "settingsButton", settings);
+        SafeSetProperty(so, "mainMenuButton", mainMenu);
         so.ApplyModifiedProperties();
     }
 
@@ -720,11 +750,11 @@ public static class BallMergeAssetCreator
         Button mainMenu = CreateUIButton(window, "MainMenuButton", "MAIN MENU", new Vector2(0, -240), new Vector2(450, 100), new Color(0.91f, 0.3f, 0.24f), Color.white);
 
         SerializedObject so = new SerializedObject(panel);
-        so.FindProperty("titleText").objectReferenceValue = title;
-        so.FindProperty("finalScoreText").objectReferenceValue = finalScore;
-        so.FindProperty("highScoreText").objectReferenceValue = highScore;
-        so.FindProperty("restartButton").objectReferenceValue = restart;
-        so.FindProperty("mainMenuButton").objectReferenceValue = mainMenu;
+        SafeSetProperty(so, "titleText", title);
+        SafeSetProperty(so, "finalScoreText", finalScore);
+        SafeSetProperty(so, "highScoreText", highScore);
+        SafeSetProperty(so, "restartButton", restart);
+        SafeSetProperty(so, "mainMenuButton", mainMenu);
         so.ApplyModifiedProperties();
     }
 
@@ -746,13 +776,13 @@ public static class BallMergeAssetCreator
         Button mainMenu = CreateUIButton(window, "MainMenuButton", "MAIN MENU", new Vector2(0, -280), new Vector2(450, 95), new Color(0.91f, 0.3f, 0.24f), Color.white);
 
         SerializedObject so = new SerializedObject(panel);
-        so.FindProperty("titleText").objectReferenceValue = title;
-        so.FindProperty("starsText").objectReferenceValue = starsText;
-        so.FindProperty("scoreText").objectReferenceValue = score;
-        so.FindProperty("dropsUsedText").objectReferenceValue = dropsUsed;
-        so.FindProperty("nextLevelButton").objectReferenceValue = nextLevel;
-        so.FindProperty("replayButton").objectReferenceValue = replay;
-        so.FindProperty("mainMenuButton").objectReferenceValue = mainMenu;
+        SafeSetProperty(so, "titleText", title);
+        SafeSetProperty(so, "starsText", starsText);
+        SafeSetProperty(so, "scoreText", score);
+        SafeSetProperty(so, "dropsUsedText", dropsUsed);
+        SafeSetProperty(so, "nextLevelButton", nextLevel);
+        SafeSetProperty(so, "replayButton", replay);
+        SafeSetProperty(so, "mainMenuButton", mainMenu);
         so.ApplyModifiedProperties();
     }
 
@@ -790,15 +820,15 @@ public static class BallMergeAssetCreator
         Button backBtn = CreateUIButton(panel.gameObject, "BackButton", "⬅ BACK TO MENU", new Vector2(0, -550), new Vector2(500, 95), new Color(0.25f, 0.3f, 0.4f), Color.white);
 
         SerializedObject so = new SerializedObject(panel);
-        so.FindProperty("currentKitNameText").objectReferenceValue = currentKit;
-        so.FindProperty("coinBalanceText").objectReferenceValue = coinBalanceText;
-        so.FindProperty("classicKitButton").objectReferenceValue = classicBtn;
-        so.FindProperty("oceanKitButton").objectReferenceValue = oceanBtn;
-        so.FindProperty("skyKitButton").objectReferenceValue = skyBtn;
-        so.FindProperty("inspectClassicButton").objectReferenceValue = inspectClassic;
-        so.FindProperty("inspectOceanButton").objectReferenceValue = inspectOcean;
-        so.FindProperty("inspectSkyButton").objectReferenceValue = inspectSky;
-        so.FindProperty("backButton").objectReferenceValue = backBtn;
+        SafeSetProperty(so, "currentKitNameText", currentKit);
+        SafeSetProperty(so, "coinBalanceText", coinBalanceText);
+        SafeSetProperty(so, "classicKitButton", classicBtn);
+        SafeSetProperty(so, "oceanKitButton", oceanBtn);
+        SafeSetProperty(so, "skyKitButton", skyBtn);
+        SafeSetProperty(so, "inspectClassicButton", inspectClassic);
+        SafeSetProperty(so, "inspectOceanButton", inspectOcean);
+        SafeSetProperty(so, "inspectSkyButton", inspectSky);
+        SafeSetProperty(so, "backButton", backBtn);
         so.ApplyModifiedProperties();
     }
 
@@ -825,12 +855,12 @@ public static class BallMergeAssetCreator
         Button closeBtn = CreateUIButton(window, "CloseButton", "✖ CLOSE", new Vector2(200, -480), new Vector2(360, 85), new Color(0.91f, 0.3f, 0.24f), Color.white);
 
         SerializedObject so = new SerializedObject(panel);
-        so.FindProperty("kitTitleText").objectReferenceValue = title;
-        so.FindProperty("kitSubtitleText").objectReferenceValue = subtitle;
-        so.FindProperty("tierListContainer").objectReferenceValue = containerObj.transform;
-        so.FindProperty("equipButton").objectReferenceValue = equipBtn;
-        so.FindProperty("equipButtonText").objectReferenceValue = equipTxt;
-        so.FindProperty("closeButton").objectReferenceValue = closeBtn;
+        SafeSetProperty(so, "kitTitleText", title);
+        SafeSetProperty(so, "kitSubtitleText", subtitle);
+        SafeSetProperty(so, "tierListContainer", containerObj.transform);
+        SafeSetProperty(so, "equipButton", equipBtn);
+        SafeSetProperty(so, "equipButtonText", equipTxt);
+        SafeSetProperty(so, "closeButton", closeBtn);
         so.ApplyModifiedProperties();
     }
 
@@ -886,17 +916,17 @@ public static class BallMergeAssetCreator
         Button backBtn = CreateUIButton(panel.gameObject, "BackButton", "⬅ BACK TO MENU", new Vector2(0, -560), new Vector2(500, 95), new Color(0.25f, 0.3f, 0.4f), Color.white);
 
         SerializedObject so = new SerializedObject(panel);
-        so.FindProperty("currentThemeNameText").objectReferenceValue = currentTheme;
-        so.FindProperty("coinBalanceText").objectReferenceValue = coinBalanceText;
-        so.FindProperty("darkThemeButton").objectReferenceValue = darkBtn;
-        so.FindProperty("oceanThemeButton").objectReferenceValue = oceanBtn;
-        so.FindProperty("skyThemeButton").objectReferenceValue = skyBtn;
-        so.FindProperty("sunsetThemeButton").objectReferenceValue = sunsetBtn;
-        so.FindProperty("inspectDarkButton").objectReferenceValue = inspectDark;
-        so.FindProperty("inspectOceanButton").objectReferenceValue = inspectOcean;
-        so.FindProperty("inspectSkyButton").objectReferenceValue = inspectSky;
-        so.FindProperty("inspectSunsetButton").objectReferenceValue = inspectSunset;
-        so.FindProperty("backButton").objectReferenceValue = backBtn;
+        SafeSetProperty(so, "currentThemeNameText", currentTheme);
+        SafeSetProperty(so, "coinBalanceText", coinBalanceText);
+        SafeSetProperty(so, "darkThemeButton", darkBtn);
+        SafeSetProperty(so, "oceanThemeButton", oceanBtn);
+        SafeSetProperty(so, "skyThemeButton", skyBtn);
+        SafeSetProperty(so, "sunsetThemeButton", sunsetBtn);
+        SafeSetProperty(so, "inspectDarkButton", inspectDark);
+        SafeSetProperty(so, "inspectOceanButton", inspectOcean);
+        SafeSetProperty(so, "inspectSkyButton", inspectSky);
+        SafeSetProperty(so, "inspectSunsetButton", inspectSunset);
+        SafeSetProperty(so, "backButton", backBtn);
         so.ApplyModifiedProperties();
     }
 
@@ -936,19 +966,19 @@ public static class BallMergeAssetCreator
         Button closeBtn = CreateUIButton(window, "CloseButton", "✖ CLOSE", new Vector2(200, -500), new Vector2(360, 85), new Color(0.91f, 0.3f, 0.24f), Color.white);
 
         SerializedObject so = new SerializedObject(panel);
-        so.FindProperty("themeTitleText").objectReferenceValue = title;
-        so.FindProperty("themeSubtitleText").objectReferenceValue = subtitle;
-        so.FindProperty("previewBackgroundBox").objectReferenceValue = fieldObj.GetComponent<Image>();
-        so.FindProperty("previewWallLeft").objectReferenceValue = wallLeft;
-        so.FindProperty("previewWallRight").objectReferenceValue = wallRight;
-        so.FindProperty("previewWallBottom").objectReferenceValue = wallBottom;
-        so.FindProperty("previewDangerLine").objectReferenceValue = dangerLine;
-        so.FindProperty("bgColorText").objectReferenceValue = bgTxt;
-        so.FindProperty("wallColorText").objectReferenceValue = wallTxt;
-        so.FindProperty("dangerColorText").objectReferenceValue = dangerTxt;
-        so.FindProperty("applyButton").objectReferenceValue = applyBtn;
-        so.FindProperty("applyButtonText").objectReferenceValue = applyTxt;
-        so.FindProperty("closeButton").objectReferenceValue = closeBtn;
+        SafeSetProperty(so, "themeTitleText", title);
+        SafeSetProperty(so, "themeSubtitleText", subtitle);
+        SafeSetProperty(so, "previewBackgroundBox", fieldObj.GetComponent<Image>());
+        SafeSetProperty(so, "previewWallLeft", wallLeft);
+        SafeSetProperty(so, "previewWallRight", wallRight);
+        SafeSetProperty(so, "previewWallBottom", wallBottom);
+        SafeSetProperty(so, "previewDangerLine", dangerLine);
+        SafeSetProperty(so, "bgColorText", bgTxt);
+        SafeSetProperty(so, "wallColorText", wallTxt);
+        SafeSetProperty(so, "dangerColorText", dangerTxt);
+        SafeSetProperty(so, "applyButton", applyBtn);
+        SafeSetProperty(so, "applyButtonText", applyTxt);
+        SafeSetProperty(so, "closeButton", closeBtn);
         so.ApplyModifiedProperties();
     }
 
@@ -980,7 +1010,7 @@ public static class BallMergeAssetCreator
         Button backBtn = CreateUIButton(window, "BackButton", "CLOSE", new Vector2(0, -220), new Vector2(380, 90), new Color(0.91f, 0.3f, 0.24f), Color.white);
 
         SerializedObject so = new SerializedObject(panel);
-        so.FindProperty("backButton").objectReferenceValue = backBtn;
+        SafeSetProperty(so, "backButton", backBtn);
         so.ApplyModifiedProperties();
     }
 
@@ -1002,20 +1032,33 @@ public static class BallMergeAssetCreator
         TMP_Text cancelTxt = cancelBtn.GetComponentInChildren<TMP_Text>();
 
         SerializedObject so = new SerializedObject(panel);
-        so.FindProperty("titleText").objectReferenceValue = title;
-        so.FindProperty("messageText").objectReferenceValue = message;
-        so.FindProperty("confirmButton").objectReferenceValue = confirmBtn;
-        so.FindProperty("confirmButtonText").objectReferenceValue = confirmTxt;
-        so.FindProperty("cancelButton").objectReferenceValue = cancelBtn;
-        so.FindProperty("cancelButtonText").objectReferenceValue = cancelTxt;
+        SafeSetProperty(so, "titleText", title);
+        SafeSetProperty(so, "messageText", message);
+        SafeSetProperty(so, "confirmButton", confirmBtn);
+        SafeSetProperty(so, "confirmButtonText", confirmTxt);
+        SafeSetProperty(so, "cancelButton", cancelBtn);
+        SafeSetProperty(so, "cancelButtonText", cancelTxt);
         so.ApplyModifiedProperties();
     }
 
     #endregion
 
+    private static void SafeSetProperty(SerializedObject so, string propertyName, UnityEngine.Object value)
+    {
+        SerializedProperty prop = so.FindProperty(propertyName);
+        if (prop != null)
+        {
+            prop.objectReferenceValue = value;
+        }
+        else
+        {
+            Debug.LogWarning($"[BallMergeAssetCreator] Property '{propertyName}' not found on {so.targetObject.GetType().Name}");
+        }
+    }
+
     #region UGUI Helper Methods
 
-    private static GameObject CreateUICard(GameObject parent, string name, Vector2 pos, Vector2 size, Color color)
+    private static GameObject CreateUICard(GameObject parent, string name, Vector2 pos, Vector2 size, Color color, Sprite sprite = null)
     {
         GameObject obj = new GameObject(name);
         obj.transform.SetParent(parent.transform, false);
@@ -1024,8 +1067,31 @@ public static class BallMergeAssetCreator
         rect.anchoredPosition = pos;
         rect.sizeDelta = size;
 
+        if (sprite == null)
+        {
+            if (name == "WindowBox")
+                sprite = s_frameBlue;
+            else if (name.Contains("Header") || name.Contains("Ribbon"))
+                sprite = s_bannerBlue != null ? s_bannerBlue : s_frameBlue;
+            else if (name.Contains("Container") || name.Contains("Badge") || name.Contains("Endless") || name.Contains("Grid") || name.Contains("Wheel"))
+                sprite = s_frameCyan;
+            else if (name.Contains("Daily") || name.Contains("Kits") || name.Contains("Themes") || name.Contains("Streak"))
+                sprite = s_framePurple;
+            else if (name.Contains("Card"))
+                sprite = s_frameBlue;
+        }
+
         Image img = obj.AddComponent<Image>();
-        img.color = color;
+        if (sprite != null)
+        {
+            img.sprite = sprite;
+            img.type = Image.Type.Sliced;
+            img.color = Color.white;
+        }
+        else
+        {
+            img.color = color;
+        }
         return obj;
     }
 
@@ -1087,7 +1153,7 @@ public static class BallMergeAssetCreator
         return text;
     }
 
-    private static Button CreateUIButton(GameObject parent, string name, string labelText, Vector2 pos, Vector2 size, Color bgColor, Color textColor)
+    private static Button CreateUIButton(GameObject parent, string name, string labelText, Vector2 pos, Vector2 size, Color bgColor, Color textColor, Sprite sprite = null)
     {
         GameObject obj = new GameObject(name);
         obj.transform.SetParent(parent.transform, false);
@@ -1096,19 +1162,41 @@ public static class BallMergeAssetCreator
         rect.anchoredPosition = pos;
         rect.sizeDelta = size;
 
+        if (sprite == null)
+        {
+            if (name.Contains("Endless") || name.Contains("Resume") || name.Contains("Next") || name.Contains("Confirm") || name.Contains("Spin") || name.Contains("Apply") || name.Contains("Equip") || name.Contains("Play1") || name.Contains("PlayLevel"))
+                sprite = s_btnGreen;
+            else if (name.Contains("Daily") || name.Contains("Map") || name.Contains("Restart") || name.Contains("Replay") || name.Contains("Streak"))
+                sprite = s_btnYellow;
+            else if (name.Contains("Quit") || name.Contains("Back") || name.Contains("Close") || name.Contains("Cancel") || name.Contains("MainMenu"))
+                sprite = s_btnRed;
+            else
+                sprite = s_btnBlue;
+        }
+
         Image img = obj.AddComponent<Image>();
-        img.color = bgColor;
+        if (sprite != null)
+        {
+            img.sprite = sprite;
+            img.type = Image.Type.Sliced;
+            img.color = Color.white;
+        }
+        else
+        {
+            img.color = bgColor;
+        }
 
         Button btn = obj.AddComponent<Button>();
         btn.targetGraphic = img;
 
         ColorBlock cb = btn.colors;
-        cb.highlightedColor = bgColor * 1.15f;
-        cb.pressedColor = bgColor * 0.85f;
+        cb.highlightedColor = new Color(1.1f, 1.1f, 1.1f, 1f);
+        cb.pressedColor = new Color(0.85f, 0.85f, 0.85f, 1f);
         btn.colors = cb;
 
-        // Label child text
-        CreateUIText(obj, "Text", labelText, Vector2.zero, size, size.y * 0.38f, textColor, TextAlignmentOptions.Center);
+        // Label child text with bold style
+        TMP_Text txt = CreateUIText(obj, "Text", labelText, Vector2.zero, size, size.y * 0.38f, textColor, TextAlignmentOptions.Center);
+        txt.fontStyle = FontStyles.Bold;
 
         return btn;
     }

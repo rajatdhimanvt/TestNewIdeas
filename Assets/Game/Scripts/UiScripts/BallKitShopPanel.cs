@@ -10,6 +10,7 @@ public class BallKitShopPanel : UIBasePanel
 {
     [Header("Current Equipped Display")]
     [SerializeField] private TMP_Text currentKitNameText;
+    [SerializeField] private TMP_Text coinBalanceText;
 
     [Header("Kit Buttons")]
     [SerializeField] private Button classicKitButton;
@@ -40,6 +41,13 @@ public class BallKitShopPanel : UIBasePanel
         {
             backButton.onClick.AddListener(OnBackClicked);
         }
+
+        PlayerDataManager.OnCoinsChanged += UpdateCoinDisplay;
+    }
+
+    private void OnDestroy()
+    {
+        PlayerDataManager.OnCoinsChanged -= UpdateCoinDisplay;
     }
 
     public override void OnShow()
@@ -56,6 +64,7 @@ public class BallKitShopPanel : UIBasePanel
             currentKitNameText.text = active != null ? $"ACTIVE: {active.kitName.ToUpper()}" : "ACTIVE: CLASSIC FRUITS";
         }
 
+        UpdateCoinDisplay(PlayerDataManager.HasInstance ? PlayerDataManager.Instance.Coins : 0);
         UpdateKitButtonState("classic_kit", classicKitButton, 0);
         UpdateKitButtonState("ocean_kit", oceanKitButton, 500);
         UpdateKitButtonState("sky_kit", skyKitButton, 1000);
@@ -124,6 +133,14 @@ public class BallKitShopPanel : UIBasePanel
         if (uiManager != null)
         {
             uiManager.GoBack();
+        }
+    }
+
+    private void UpdateCoinDisplay(int coins)
+    {
+        if (coinBalanceText != null)
+        {
+            coinBalanceText.text = $"🪙 {coins:N0} COINS";
         }
     }
 }

@@ -56,7 +56,13 @@ public abstract class UIBasePanel : MonoBehaviour
 
             activeTween?.Kill();
 
-            if (animateScale)
+            Transform windowBox = transform.Find("WindowBox");
+            if (windowBox != null)
+            {
+                windowBox.localScale = Vector3.one * 0.7f;
+                windowBox.DOScale(1f, fadeDuration).SetEase(Ease.OutBack).SetUpdate(true);
+            }
+            else if (animateScale)
             {
                 transform.localScale = Vector3.one * 0.85f;
                 transform.DOScale(1f, fadeDuration).SetEase(Ease.OutBack).SetUpdate(true);
@@ -92,6 +98,13 @@ public abstract class UIBasePanel : MonoBehaviour
     public virtual void OnHide()
     {
         activeTween?.Kill();
+
+        Transform windowBox = transform.Find("WindowBox");
+        if (windowBox != null)
+        {
+            windowBox.DOScale(0.7f, fadeDuration * 0.8f).SetEase(Ease.InBack).SetUpdate(true);
+        }
+
 
         if (canvasGroup != null)
         {

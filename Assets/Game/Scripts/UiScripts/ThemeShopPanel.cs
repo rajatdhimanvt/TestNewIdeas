@@ -10,6 +10,7 @@ public class ThemeShopPanel : UIBasePanel
 {
     [Header("Current Theme Display")]
     [SerializeField] private TMP_Text currentThemeNameText;
+    [SerializeField] private TMP_Text coinBalanceText;
 
     [Header("Theme Select Buttons")]
     [SerializeField] private Button darkThemeButton;
@@ -44,6 +45,13 @@ public class ThemeShopPanel : UIBasePanel
         {
             backButton.onClick.AddListener(OnBackClicked);
         }
+
+        PlayerDataManager.OnCoinsChanged += UpdateCoinDisplay;
+    }
+
+    private void OnDestroy()
+    {
+        PlayerDataManager.OnCoinsChanged -= UpdateCoinDisplay;
     }
 
     public override void OnShow()
@@ -60,6 +68,7 @@ public class ThemeShopPanel : UIBasePanel
             currentThemeNameText.text = active != null ? $"ACTIVE: {active.themeName.ToUpper()}" : "ACTIVE: DARK COSMIC";
         }
 
+        UpdateCoinDisplay(PlayerDataManager.HasInstance ? PlayerDataManager.Instance.Coins : 0);
         UpdateThemeButtonState("dark_theme", darkThemeButton, 0);
         UpdateThemeButtonState("ocean_theme", oceanThemeButton, 300);
         UpdateThemeButtonState("sky_theme", skyThemeButton, 600);
@@ -129,6 +138,14 @@ public class ThemeShopPanel : UIBasePanel
         if (uiManager != null)
         {
             uiManager.GoBack();
+        }
+    }
+
+    private void UpdateCoinDisplay(int coins)
+    {
+        if (coinBalanceText != null)
+        {
+            coinBalanceText.text = $"🪙 {coins:N0} COINS";
         }
     }
 }

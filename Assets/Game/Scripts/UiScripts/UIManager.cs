@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -79,20 +80,27 @@ public class UIManager : Singleton<UIManager>
 
     private void SetupButtonAudioHooks()
     {
-        if (!playSoundOnAllButtons) return;
-
         var buttons = GetComponentsInChildren<Button>(true);
         for (int i = 0; i < buttons.Length; i++)
         {
-            buttons[i].onClick.AddListener(() =>
+            Button btn = buttons[i];
+            btn.onClick.AddListener(() =>
             {
-                if (AudioManager.HasInstance)
+                if (btn != null)
                 {
-                    AudioManager.Instance.PlaySFX(defaultButtonSound);
+                    btn.transform.DOPunchScale(Vector3.one * -0.08f, 0.12f, 8, 1).SetUpdate(true);
                 }
-                else
+
+                if (playSoundOnAllButtons)
                 {
-                    GameEvents.OnPlaySFX?.Invoke(defaultButtonSound);
+                    if (AudioManager.HasInstance)
+                    {
+                        AudioManager.Instance.PlaySFX(defaultButtonSound);
+                    }
+                    else
+                    {
+                        GameEvents.OnPlaySFX?.Invoke(defaultButtonSound);
+                    }
                 }
             });
         }
