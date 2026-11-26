@@ -15,6 +15,7 @@ public class GameplayController : Singleton<GameplayController>
     [SerializeField] private ContainerBoundary container;
     [SerializeField] private DangerLine dangerLine;
     [SerializeField] private LevelBlockManager blockManager;
+    [SerializeField] private ThemeAnimatedBackground animatedBackground;
 
     [Header("Session State")]
     [SerializeField] private int currentScore = 0;
@@ -44,7 +45,7 @@ public class GameplayController : Singleton<GameplayController>
         if (dropper == null) dropper = FindAnyObjectByType<BallDropper>();
         if (container == null) container = FindAnyObjectByType<ContainerBoundary>();
         if (dangerLine == null) dangerLine = FindAnyObjectByType<DangerLine>();
-        if (blockManager == null) blockManager = FindAnyObjectByType<LevelBlockManager>();
+        EnsureGameplaySupportComponents();
     }
 
     private void Start()
@@ -58,6 +59,37 @@ public class GameplayController : Singleton<GameplayController>
         if (GameManager.HasInstance && GameManager.Instance.CurrentState != GameState.InGame)
         {
             SetGameplayVisible(false);
+        }
+    }
+
+    private void EnsureGameplaySupportComponents()
+    {
+        if (blockManager == null)
+        {
+            blockManager = FindAnyObjectByType<LevelBlockManager>();
+            if (blockManager == null)
+            {
+                GameObject bmObj = new GameObject("LevelBlockManager");
+                bmObj.transform.SetParent(transform, false);
+                blockManager = bmObj.AddComponent<LevelBlockManager>();
+            }
+        }
+
+        if (animatedBackground == null)
+        {
+            animatedBackground = FindAnyObjectByType<ThemeAnimatedBackground>();
+            if (animatedBackground == null)
+            {
+                GameObject bgObj = new GameObject("ThemeAnimatedBackground");
+                bgObj.transform.SetParent(transform, false);
+                animatedBackground = bgObj.AddComponent<ThemeAnimatedBackground>();
+            }
+        }
+
+        Camera mainCam = Camera.main;
+        if (mainCam != null && mainCam.GetComponent<CameraShake2D>() == null)
+        {
+            mainCam.gameObject.AddComponent<CameraShake2D>();
         }
     }
 
@@ -79,11 +111,17 @@ public class GameplayController : Singleton<GameplayController>
         }
         if (dangerLine != null) dangerLine.gameObject.SetActive(visible);
         if (dropper != null) dropper.gameObject.SetActive(visible);
+        if (animatedBackground != null)
+        {
+            animatedBackground.gameObject.SetActive(visible);
+            if (visible) animatedBackground.SyncWithCurrentTheme();
+        }
     }
 
     public void InitializeLevel(LevelDataSO data)
     {
         levelData = data;
+        EnsureGameplaySupportComponents();
         if (BallMergeManager.HasInstance)
         {
             BallMergeManager.Instance.SetLevelData(levelData);
@@ -94,7 +132,7 @@ public class GameplayController : Singleton<GameplayController>
             container.Setup(levelData);
         }
 
-        if (dropper != null)
+        if (dropper != null && dropper.gameObject.activeInHierarchy && isSessionActive)
         {
             dropper.Setup(levelData);
         }
@@ -102,17 +140,6 @@ public class GameplayController : Singleton<GameplayController>
         if (dangerLine != null)
         {
             dangerLine.Setup(levelData);
-        }
-
-        if (blockManager == null)
-        {
-            blockManager = FindAnyObjectByType<LevelBlockManager>();
-            if (blockManager == null && levelData != null && levelData.HasBlocks)
-            {
-                GameObject bmObj = new GameObject("LevelBlockManager");
-                bmObj.transform.SetParent(transform, false);
-                blockManager = bmObj.AddComponent<LevelBlockManager>();
-            }
         }
     }
 
@@ -156,9 +183,9 @@ public class GameplayController : Singleton<GameplayController>
 
     private void HandleGamePaused(bool isPaused)
     {
-        if (dropper != null)
+        if (dropper != null && isSessionActive)
         {
-            dropper.SetInputActive(!isPaused && isSessionActive);
+            dropper.SetInputActive(!isPaused);
         }
     }
 
@@ -495,8 +522,8 @@ public class GameplayController : Singleton<GameplayController>
 
         if (dropper != null && levelData != null)
         {
-            dropper.Setup(levelData);
             dropper.SetInputActive(true);
+            dropper.Setup(levelData);
         }
 
         if (dangerLine != null && levelData != null)

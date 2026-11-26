@@ -357,9 +357,10 @@ public static class BallMergeAssetCreator
             blockMgrObj = new GameObject("LevelBlockManager");
             blockMgrObj.transform.SetParent(gameplayObj.transform);
         }
-        if (blockMgrObj.GetComponent<LevelBlockManager>() == null)
+        LevelBlockManager lbm = blockMgrObj.GetComponent<LevelBlockManager>();
+        if (lbm == null)
         {
-            blockMgrObj.AddComponent<LevelBlockManager>();
+            lbm = blockMgrObj.AddComponent<LevelBlockManager>();
         }
 
         // 6c. Setup ThemeAnimatedBackground
@@ -369,10 +370,16 @@ public static class BallMergeAssetCreator
             bgFxObj = new GameObject("ThemeAnimatedBackground");
             bgFxObj.transform.SetParent(gameplayObj.transform);
         }
-        if (bgFxObj.GetComponent<ThemeAnimatedBackground>() == null)
+        ThemeAnimatedBackground tab = bgFxObj.GetComponent<ThemeAnimatedBackground>();
+        if (tab == null)
         {
-            bgFxObj.AddComponent<ThemeAnimatedBackground>();
+            tab = bgFxObj.AddComponent<ThemeAnimatedBackground>();
         }
+
+        SerializedObject gcSo = new SerializedObject(gc);
+        SafeSetProperty(gcSo, "blockManager", lbm);
+        SafeSetProperty(gcSo, "animatedBackground", tab);
+        gcSo.ApplyModifiedPropertiesWithoutUndo();
 
         // Initialize Level in GameplayController
         gc.InitializeLevel(levelData);
@@ -604,36 +611,69 @@ public static class BallMergeAssetCreator
         TMP_Text totalStarsText = CreateUIText(headerCard, "TotalStarsText", "TOTAL STARS: ⭐ 0 / 150", new Vector2(-150, -30), new Vector2(600, 45), 24, new Color(1.0f, 0.88f, 0.3f), TextAlignmentOptions.Left);
         TMP_Text coinBalanceText = CreateUIText(headerCard, "CoinBalanceText", "🪙 0 COINS", new Vector2(250, -30), new Vector2(350, 45), 24, new Color(1.0f, 0.88f, 0.3f), TextAlignmentOptions.Right);
 
-        // Grid Container Box
+        // Grid Container Box (hosts Canvas new ideas LevelScrollView adventure map)
         GameObject gridCard = CreateUICard(panel.gameObject, "GridCard", new Vector2(0, 50), new Vector2(940, 1100), new Color(0.12f, 0.14f, 0.2f, 0.95f));
 
-        // ScrollRect & Content
-        GameObject scrollObj = new GameObject("ScrollView");
-        scrollObj.transform.SetParent(gridCard.transform, false);
-        RectTransform scrollRectTransform = scrollObj.AddComponent<RectTransform>();
-        scrollRectTransform.anchoredPosition = Vector2.zero;
-        scrollRectTransform.sizeDelta = new Vector2(900, 1060);
+        LevelMapController adventureMap = null;
+        Transform gridContentTf = null;
+        GameObject scrollPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(BlockLevelSetupUtility.LEVEL_SCROLL_PREFAB_PATH);
+        if (scrollPrefab != null)
+        {
+            GameObject scrollInstance = PrefabUtility.InstantiatePrefab(scrollPrefab, gridCard.transform) as GameObject;
+            if (scrollInstance != null)
+            {
+                scrollInstance.name = "LevelScrollView";
+                RectTransform srt = scrollInstance.GetComponent<RectTransform>();
+                if (srt != null)
+                {
+                    srt.anchorMin = Vector2.zero;
+                    srt.anchorMax = Vector2.one;
+                    srt.pivot = new Vector2(0.5f, 0.5f);
+                    srt.offsetMin = new Vector2(16f, 16f);
+                    srt.offsetMax = new Vector2(-16f, -16f);
+                }
 
-        ScrollRect scrollRect = scrollObj.AddComponent<ScrollRect>();
-        scrollRect.horizontal = false;
-        scrollRect.vertical = true;
+                Image bgImg = scrollInstance.GetComponent<Image>();
+                if (bgImg != null) bgImg.color = new Color(0.06f, 0.09f, 0.16f, 0.92f);
 
-        GameObject contentObj = new GameObject("Content");
-        contentObj.transform.SetParent(scrollObj.transform, false);
-        RectTransform contentRect = contentObj.AddComponent<RectTransform>();
-        contentRect.anchorMin = new Vector2(0f, 1f);
-        contentRect.anchorMax = new Vector2(1f, 1f);
-        contentRect.pivot = new Vector2(0.5f, 1f);
-        contentRect.sizeDelta = new Vector2(900, 2500);
+                adventureMap = scrollInstance.GetComponent<LevelMapController>();
+                if (adventureMap != null)
+                {
+                    SerializedObject lmcSo = new SerializedObject(adventureMap);
+                    SerializedProperty loadAllProp = lmcSo.FindProperty("loadAllInitially");
+                    if (loadAllProp != null) loadAllProp.boolValue = false;
+                    SerializedProperty initCountProp = lmcSo.FindProperty("initialLoadCount");
+                    if (initCountProp != null) initCountProp.intValue = 50;
+                    SerializedProperty batchProp = lmcSo.FindProperty("batchLoadCount");
+                    if (batchProp != null) batchProp.intValue = 25;
+                    lmcSo.ApplyModifiedPropertiesWithoutUndo();
+                }
+            }
+        }
+        else
+        {
+            GameObject scrollObj = new GameObject("ScrollView");
+            scrollObj.transform.SetParent(gridCard.transform, false);
+            RectTransform scrollRectTransform = scrollObj.AddComponent<RectTransform>();
+            scrollRectTransform.anchoredPosition = Vector2.zero;
+            scrollRectTransform.sizeDelta = new Vector2(900, 1060);
 
-        scrollRect.content = contentRect;
+            ScrollRect scrollRect = scrollObj.AddComponent<ScrollRect>();
+            scrollRect.horizontal = false;
+            scrollRect.vertical = true;
+            scrollObj.AddComponent<RectMask2D>();
 
-        GridLayoutGroup gridGroup = contentObj.AddComponent<GridLayoutGroup>();
-        gridGroup.cellSize = new Vector2(190, 190);
-        gridGroup.spacing = new Vector2(25, 25);
-        gridGroup.padding = new RectOffset(30, 30, 30, 30);
-        gridGroup.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-        gridGroup.constraintCount = 4;
+            GameObject contentObj = new GameObject("Content");
+            contentObj.transform.SetParent(scrollObj.transform, false);
+            RectTransform contentRect = contentObj.AddComponent<RectTransform>();
+            contentRect.anchorMin = new Vector2(0f, 1f);
+            contentRect.anchorMax = new Vector2(1f, 1f);
+            contentRect.pivot = new Vector2(0.5f, 1f);
+            contentRect.sizeDelta = new Vector2(900, 2900);
+
+            scrollRect.content = contentRect;
+            gridContentTf = contentObj.transform;
+        }
 
         // Bottom Back Button
         Button backButton = CreateUIButton(panel.gameObject, "BackButton", "⬅ BACK TO MENU", new Vector2(0, -600), new Vector2(500, 95), new Color(0.25f, 0.3f, 0.4f), Color.white);
@@ -641,7 +681,8 @@ public static class BallMergeAssetCreator
         SerializedObject so = new SerializedObject(panel);
         SafeSetProperty(so, "totalStarsText", totalStarsText);
         SafeSetProperty(so, "coinBalanceText", coinBalanceText);
-        SafeSetProperty(so, "levelGridContainer", contentObj.transform);
+        SafeSetProperty(so, "levelGridContainer", gridContentTf);
+        SafeSetProperty(so, "levelMapController", adventureMap);
         SafeSetProperty(so, "backButton", backButton);
         so.ApplyModifiedProperties();
     }
@@ -803,6 +844,7 @@ public static class BallMergeAssetCreator
         TMP_Text starsText = CreateUIText(window, "StarsText", "⭐⭐⭐", new Vector2(0, 240), new Vector2(750, 60), 44, new Color(1.0f, 0.88f, 0.3f), TextAlignmentOptions.Center);
         TMP_Text score = CreateUIText(window, "ScoreText", "FINAL SCORE: 0", new Vector2(0, 160), new Vector2(750, 60), 36, Color.white, TextAlignmentOptions.Center);
         TMP_Text dropsUsed = CreateUIText(window, "DropsUsedText", "DROPS USED: 0", new Vector2(0, 80), new Vector2(750, 50), 28, new Color(0.7f, 0.85f, 1f), TextAlignmentOptions.Center);
+        TMP_Text coinBonus = CreateUIText(window, "CoinBonusText", "", new Vector2(0, 22), new Vector2(760, 56), 23, new Color(1f, 0.88f, 0.28f), TextAlignmentOptions.Center);
 
         Button nextLevel = CreateUIButton(window, "NextLevelButton", "NEXT LEVEL", new Vector2(0, -60), new Vector2(450, 95), new Color(0.18f, 0.8f, 0.44f), Color.white);
         Button replay = CreateUIButton(window, "ReplayButton", "REPLAY", new Vector2(0, -170), new Vector2(450, 95), new Color(0.2f, 0.6f, 0.86f), Color.white);
@@ -813,6 +855,7 @@ public static class BallMergeAssetCreator
         SafeSetProperty(so, "starsText", starsText);
         SafeSetProperty(so, "scoreText", score);
         SafeSetProperty(so, "dropsUsedText", dropsUsed);
+        SafeSetProperty(so, "coinBonusText", coinBonus);
         SafeSetProperty(so, "nextLevelButton", nextLevel);
         SafeSetProperty(so, "replayButton", replay);
         SafeSetProperty(so, "mainMenuButton", mainMenu);

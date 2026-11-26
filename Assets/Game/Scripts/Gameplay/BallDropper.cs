@@ -43,7 +43,17 @@ public class BallDropper : MonoBehaviour
 
     private void Start()
     {
-        if (levelData != null && currentBall == null)
+        if (levelData != null && currentBall == null && (!GameplayController.HasInstance || GameplayController.Instance.IsSessionActive))
+        {
+            UpdateBoundaries();
+            PrepareInitialBalls();
+        }
+    }
+
+    private void OnEnable()
+    {
+        if (isInputActive && currentBall == null && cooldownCoroutine == null && levelData != null &&
+            (!GameplayController.HasInstance || GameplayController.Instance.IsSessionActive))
         {
             UpdateBoundaries();
             PrepareInitialBalls();
@@ -116,6 +126,13 @@ public class BallDropper : MonoBehaviour
 
         BallDataSO dataToSpawn = nextBallData ?? levelData.GetRandomDroppableTier();
         nextBallData = levelData.GetRandomDroppableTier();
+        if (dataToSpawn == null)
+        {
+            Debug.LogWarning("[BallDropper] No droppable BallDataSO found on active LevelDataSO!");
+            canDrop = false;
+            UpdateAimGuide();
+            return;
+        }
 
         Vector3 spawnPos = new Vector3(currentAimX, levelData.dropHeight, 0f);
         currentBall = BallMergeManager.Instance.InstantiateBall(dataToSpawn, spawnPos);
@@ -123,6 +140,7 @@ public class BallDropper : MonoBehaviour
 
         canDrop = true;
         UpdateAimGuide();
+        GameEvents.OnNextBallUpdated?.Invoke();
     }
 
     private void Update()
@@ -226,6 +244,10 @@ public class BallDropper : MonoBehaviour
         if (active)
         {
             ignoreInputTimer = 0.25f;
+            if (currentBall == null && cooldownCoroutine == null && levelData != null && gameObject.activeInHierarchy)
+            {
+                SpawnNextBallToDropper();
+            }
         }
         UpdateAimGuide();
     }

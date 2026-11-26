@@ -102,9 +102,15 @@ public class MainMenuPanel : UIBasePanel
         if (level1 != null)
         {
             GameplayController gc = FindAnyObjectByType<GameplayController>();
-            if (gc != null) gc.InitializeLevel(level1);
-            if (uiManager != null) uiManager.ShowPanel<GameplayHUDPanel>();
-            if (GameManager.HasInstance) GameManager.Instance.StartGame();
+            if (gc != null) gc.StartLevelMode(1);
+            if (GameManager.HasInstance)
+            {
+                GameManager.Instance.StartGame();
+            }
+            else if (uiManager != null)
+            {
+                uiManager.ShowPanel<GameplayHUDPanel>();
+            }
             return;
         }
         LoadLevelDataAndStart("LevelData_Level1.asset", isEndless: false);
@@ -133,14 +139,13 @@ public class MainMenuPanel : UIBasePanel
             }
         }
 
-        if (uiManager != null)
-        {
-            uiManager.ShowPanel<GameplayHUDPanel>();
-        }
-
         if (GameManager.HasInstance)
         {
             GameManager.Instance.StartGame();
+        }
+        else if (uiManager != null)
+        {
+            uiManager.ShowPanel<GameplayHUDPanel>();
         }
     }
 

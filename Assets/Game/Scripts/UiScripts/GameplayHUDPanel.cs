@@ -34,11 +34,64 @@ public class GameplayHUDPanel : UIBasePanel
     public override void Init(UIManager manager)
     {
         base.Init(manager);
+        EnsureBlocksCounter();
 
         if (pauseButton != null)
         {
             pauseButton.onClick.AddListener(OnPauseClicked);
         }
+    }
+
+    private void EnsureBlocksCounter()
+    {
+        if (blocksContainer != null && blocksText != null) return;
+
+        Transform existing = transform.Find("BlocksContainer");
+        if (existing != null)
+        {
+            blocksContainer = existing.gameObject;
+            blocksText = existing.GetComponentInChildren<TMP_Text>(true);
+            return;
+        }
+
+        GameObject obj = new GameObject("BlocksContainer");
+        obj.transform.SetParent(transform, false);
+        RectTransform rt = obj.AddComponent<RectTransform>();
+        if (dropsContainer != null)
+        {
+            RectTransform dropsRt = dropsContainer.GetComponent<RectTransform>();
+            rt.anchorMin = dropsRt.anchorMin;
+            rt.anchorMax = dropsRt.anchorMax;
+            rt.pivot = dropsRt.pivot;
+            rt.anchoredPosition = dropsRt.anchoredPosition + new Vector2(0f, -55f);
+            rt.sizeDelta = new Vector2(dropsRt.sizeDelta.x, 50f);
+        }
+        else
+        {
+            rt.anchoredPosition = new Vector2(360f, 785f);
+            rt.sizeDelta = new Vector2(300f, 50f);
+        }
+
+        GameObject txtObj = new GameObject("BlocksText");
+        txtObj.transform.SetParent(obj.transform, false);
+        RectTransform txtRt = txtObj.AddComponent<RectTransform>();
+        txtRt.anchorMin = Vector2.zero;
+        txtRt.anchorMax = Vector2.one;
+        txtRt.offsetMin = Vector2.zero;
+        txtRt.offsetMax = Vector2.zero;
+
+        TMP_Text tmp = txtObj.AddComponent<TextMeshProUGUI>();
+        if (dropsText != null && dropsText.font != null) tmp.font = dropsText.font;
+        else if (scoreText != null && scoreText.font != null) tmp.font = scoreText.font;
+        tmp.text = "BLOCKS: 0 / 0";
+        tmp.fontSize = 26f;
+        tmp.fontStyle = FontStyles.Bold;
+        tmp.color = new Color(1f, 0.72f, 0.25f);
+        tmp.alignment = TextAlignmentOptions.Right;
+
+        blocksContainer = obj;
+        blocksText = tmp;
+        blocksContainer.SetActive(false);
     }
 
     private void OnEnable()
@@ -48,6 +101,7 @@ public class GameplayHUDPanel : UIBasePanel
         GameEvents.OnRemainingDropsChanged += UpdateRemainingDrops;
         GameEvents.OnBlocksRemainingChanged += UpdateBlocksRemaining;
         GameEvents.OnBallDropped += UpdateNextBallPreview;
+        GameEvents.OnNextBallUpdated += UpdateNextBallPreview;
     }
 
     private void OnDisable()
@@ -57,6 +111,7 @@ public class GameplayHUDPanel : UIBasePanel
         GameEvents.OnRemainingDropsChanged -= UpdateRemainingDrops;
         GameEvents.OnBlocksRemainingChanged -= UpdateBlocksRemaining;
         GameEvents.OnBallDropped -= UpdateNextBallPreview;
+        GameEvents.OnNextBallUpdated -= UpdateNextBallPreview;
     }
 
     public override void OnShow()
@@ -71,6 +126,7 @@ public class GameplayHUDPanel : UIBasePanel
 
     public void RefreshAllHUD()
     {
+        EnsureBlocksCounter();
         if (gameplayController != null)
         {
             UpdateScore(gameplayController.CurrentScore);
@@ -108,6 +164,7 @@ public class GameplayHUDPanel : UIBasePanel
 
     private void UpdateBlocksRemaining(int remaining, int total)
     {
+        EnsureBlocksCounter();
         if (blocksContainer != null)
         {
             blocksContainer.SetActive(total > 0);

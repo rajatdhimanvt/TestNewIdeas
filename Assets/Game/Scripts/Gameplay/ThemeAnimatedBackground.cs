@@ -36,6 +36,8 @@ public class ThemeAnimatedBackground : MonoBehaviour
 
     private readonly List<AmbientItem> activeItems = new List<AmbientItem>();
     private AmbientMode currentMode = AmbientMode.Stars;
+    private ThemeDataSO lastAppliedTheme;
+    private bool hasBuiltPool = false;
 
     private static Sprite starSprite;
     private static Sprite bubbleSprite;
@@ -45,6 +47,7 @@ public class ThemeAnimatedBackground : MonoBehaviour
     private void OnEnable()
     {
         ThemeManager.OnThemeChanged += HandleThemeChanged;
+        SyncWithCurrentTheme();
     }
 
     private void OnDisable()
@@ -54,14 +57,13 @@ public class ThemeAnimatedBackground : MonoBehaviour
 
     private void Start()
     {
-        if (ThemeManager.HasInstance && ThemeManager.Instance.CurrentEquippedTheme != null)
-        {
-            ApplyTheme(ThemeManager.Instance.CurrentEquippedTheme);
-        }
-        else
-        {
-            ApplyMode(AmbientMode.Stars);
-        }
+        SyncWithCurrentTheme();
+    }
+
+    public void SyncWithCurrentTheme()
+    {
+        ThemeDataSO activeTheme = ThemeManager.HasInstance ? ThemeManager.Instance.CurrentEquippedTheme : null;
+        ApplyTheme(activeTheme);
     }
 
     private void HandleThemeChanged(ThemeDataSO theme)
@@ -71,34 +73,37 @@ public class ThemeAnimatedBackground : MonoBehaviour
 
     public void ApplyTheme(ThemeDataSO theme)
     {
-        if (theme == null)
-        {
-            ApplyMode(AmbientMode.Stars);
-            return;
-        }
+        AmbientMode desiredMode = ResolveModeForTheme(theme);
+        if (hasBuiltPool && desiredMode == currentMode && lastAppliedTheme == theme) return;
+
+        lastAppliedTheme = theme;
+        ApplyMode(desiredMode);
+    }
+
+    private static AmbientMode ResolveModeForTheme(ThemeDataSO theme)
+    {
+        if (theme == null) return AmbientMode.Stars;
 
         string id = !string.IsNullOrEmpty(theme.themeId) ? theme.themeId.ToLowerInvariant() : theme.themeName.ToLowerInvariant();
         if (id.Contains("ocean") || id.Contains("aqua") || id.Contains("sea"))
         {
-            ApplyMode(AmbientMode.Bubbles);
+            return AmbientMode.Bubbles;
         }
-        else if (id.Contains("sky") || id.Contains("cloud"))
+        if (id.Contains("sky") || id.Contains("cloud"))
         {
-            ApplyMode(AmbientMode.Clouds);
+            return AmbientMode.Clouds;
         }
-        else if (id.Contains("sunset") || id.Contains("warm") || id.Contains("fire"))
+        if (id.Contains("sunset") || id.Contains("warm") || id.Contains("fire"))
         {
-            ApplyMode(AmbientMode.Embers);
+            return AmbientMode.Embers;
         }
-        else
-        {
-            ApplyMode(AmbientMode.Stars);
-        }
+        return AmbientMode.Stars;
     }
 
     public void ApplyMode(AmbientMode mode)
     {
         currentMode = mode;
+        hasBuiltPool = true;
         ClearItems();
 
         switch (mode)

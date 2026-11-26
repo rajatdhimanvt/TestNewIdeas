@@ -61,7 +61,9 @@ public class LevelMapController : MonoBehaviour
 
     private int currentlyLoadedLevels = 0;
     private bool isLoadingMore = false;
+    private bool hasInitialized = false;
     private Coroutine activeScrollRoutine;
+    private static Sprite defaultCircleSprite;
 
     // Cache precomputed positions for all 1000 levels
     private readonly Dictionary<int, Vector2> cachedNodePositions = new Dictionary<int, Vector2>();
@@ -99,7 +101,66 @@ public class LevelMapController : MonoBehaviour
 
         PlayerDataManager.OnLevelStarsUpdated += OnLevelStarsUpdated;
 
-        InitializeMap();
+        if (!hasInitialized)
+        {
+            InitializeMap();
+            hasInitialized = true;
+        }
+    }
+
+    private void OnEnable()
+    {
+        if (hasInitialized)
+        {
+            RefreshMap();
+        }
+    }
+
+    public void SetScrollChunkConfig(bool loadAll, int initialCount, int batchCount)
+    {
+        loadAllInitially = loadAll;
+        initialLoadCount = Mathf.Max(10, initialCount);
+        batchLoadCount = Mathf.Max(10, batchCount);
+        UpdateContentHeight();
+    }
+
+    public void RefreshMap()
+    {
+        if (!hasInitialized)
+        {
+            if (contentRect == null && scrollRect != null) contentRect = scrollRect.content;
+            if (cachedNodePositions.Count == 0)
+            {
+                SetupContentAlignment();
+                PrecalculateAllPositions();
+            }
+            InitializeMap();
+            hasInitialized = true;
+            return;
+        }
+
+        int highestUnlocked = GetHighestUnlockedLevel();
+        if (!loadAllInitially && currentlyLoadedLevels < Mathf.Min(totalLevels, highestUnlocked + 10))
+        {
+            LoadLevelsUpTo(highestUnlocked + 15);
+        }
+
+        foreach (var kv in spawnedNodes)
+        {
+            int lvl = kv.Key;
+            GameObject node = kv.Value;
+            if (node == null) continue;
+
+            bool isUnlocked = lvl <= highestUnlocked;
+            bool isCurrent = lvl == highestUnlocked;
+            int stars = GetLevelStars(lvl);
+            ConfigurePrefabNode(node, lvl, isUnlocked, isCurrent, stars);
+        }
+
+        if (autoScrollToCurrentLevel && gameObject.activeInHierarchy)
+        {
+            ScrollToLevel(highestUnlocked, 0.2f);
+        }
     }
 
     private void OnDestroy()
@@ -207,7 +268,7 @@ public class LevelMapController : MonoBehaviour
             LoadLevelsUpTo(toLoad);
         }
 
-        if (autoScrollToCurrentLevel)
+        if (autoScrollToCurrentLevel && gameObject.activeInHierarchy)
         {
             ScrollToLevel(highestUnlocked, 0.1f);
         }
@@ -343,6 +404,8 @@ public class LevelMapController : MonoBehaviour
         RectTransform rt = nodeObj.AddComponent<RectTransform>();
         rt.sizeDelta = nodeSize;
 
+        Sprite circleSprite = nodeBackgroundSprite != null ? nodeBackgroundSprite : GetDefaultCircleSprite();
+
         // Outer Glow / Ring
         GameObject ringObj = new GameObject("Ring");
         ringObj.transform.SetParent(nodeObj.transform, false);
@@ -351,13 +414,13 @@ public class LevelMapController : MonoBehaviour
         ringRt.anchorMax = Vector2.one;
         ringRt.sizeDelta = new Vector2(16f, 16f);
         Image ringImg = ringObj.AddComponent<Image>();
-        if (nodeBackgroundSprite != null) ringImg.sprite = nodeBackgroundSprite;
-        ringImg.color = isCurrent ? new Color(1f, 0.9f, 0.35f, 0.9f) : new Color(0f, 0f, 0f, 0.32f);
+        ringImg.sprite = circleSprite;
+        ringImg.color = isCurrent ? new Color(1f, 0.9f, 0.35f, 0.95f) : new Color(0f, 0f, 0f, 0.38f);
         ringImg.raycastTarget = false;
 
         // Main Button Background
         Image bgImg = nodeObj.AddComponent<Image>();
-        if (nodeBackgroundSprite != null) bgImg.sprite = nodeBackgroundSprite;
+        bgImg.sprite = circleSprite;
         if (isCurrent)
             bgImg.color = currentLevelColor;
         else if (isUnlocked)
@@ -380,43 +443,62 @@ public class LevelMapController : MonoBehaviour
         textRt.anchoredPosition = new Vector2(0, isUnlocked ? 8f : 0f);
 
         TextMeshProUGUI tmp = textObj.AddComponent<TextMeshProUGUI>();
-        tmp.text = isUnlocked ? levelNum.ToString() : "🔒";
-        tmp.fontSize = isUnlocked ? (levelNum >= 100 ? 36 : 42) : 36;
+        tmp.text = isUnlocked ? levelNum.ToString() : "LOCK";
+        tmp.fontSize = isUnlocked ? (levelNum >= 100 ? 34 : 42) : 22;
         tmp.fontStyle = FontStyles.Bold;
         tmp.alignment = TextAlignmentOptions.Center;
         tmp.color = Color.white;
         tmp.raycastTarget = false;
 
         // Stars display (for unlocked levels)
-        if (isUnlocked)
-        {
-            GameObject starsObj = new GameObject("Stars");
-            starsObj.transform.SetParent(nodeObj.transform, false);
-            RectTransform starsRt = starsObj.AddComponent<RectTransform>();
-            starsRt.anchorMin = new Vector2(0.5f, 0f);
-            starsRt.anchorMax = new Vector2(0.5f, 0f);
-            starsRt.pivot = new Vector2(0.5f, 0f);
-            starsRt.anchoredPosition = new Vector2(0, 10f);
-            starsRt.sizeDelta = new Vector2(110f, 24f);
+        GameObject starsObj = new GameObject("Stars");
+        starsObj.transform.SetParent(nodeObj.transform, false);
+        RectTransform starsRt = starsObj.AddComponent<RectTransform>();
+        starsRt.anchorMin = new Vector2(0.5f, 0f);
+        starsRt.anchorMax = new Vector2(0.5f, 0f);
+        starsRt.pivot = new Vector2(0.5f, 0f);
+        starsRt.anchoredPosition = new Vector2(0, 10f);
+        starsRt.sizeDelta = new Vector2(110f, 24f);
 
-            TextMeshProUGUI starsTmp = starsObj.AddComponent<TextMeshProUGUI>();
-            string starStr = "";
-            for (int s = 0; s < 3; s++)
-            {
-                starStr += s < stars ? "★" : "☆";
-            }
-            starsTmp.text = starStr;
-            starsTmp.fontSize = 18;
-            starsTmp.alignment = TextAlignmentOptions.Center;
-            starsTmp.color = new Color(1f, 0.9f, 0.2f);
-            starsTmp.raycastTarget = false;
+        TextMeshProUGUI starsTmp = starsObj.AddComponent<TextMeshProUGUI>();
+        string starStr = "";
+        for (int s = 0; s < 3; s++)
+        {
+            starStr += s < stars ? "★" : "☆";
         }
+        starsTmp.text = isUnlocked ? starStr : "";
+        starsTmp.fontSize = 18;
+        starsTmp.alignment = TextAlignmentOptions.Center;
+        starsTmp.color = new Color(1f, 0.9f, 0.2f);
+        starsTmp.raycastTarget = false;
+        starsObj.SetActive(isUnlocked);
+
+        // Top tag: Milestone Chest (every 5 levels) or Block Stage count
+        RefreshNodeBadge(nodeObj, levelNum, isUnlocked);
 
         return nodeObj;
     }
 
     private void ConfigurePrefabNode(GameObject nodeObj, int levelNum, bool isUnlocked, bool isCurrent, int stars)
     {
+        Transform ringTf = nodeObj.transform.Find("Ring");
+        if (ringTf != null)
+        {
+            Image ringImg = ringTf.GetComponent<Image>();
+            if (ringImg != null)
+            {
+                ringImg.color = isCurrent ? new Color(1f, 0.9f, 0.35f, 0.95f) : new Color(0f, 0f, 0f, 0.38f);
+            }
+        }
+
+        Image mainBg = nodeObj.GetComponent<Image>();
+        if (mainBg != null)
+        {
+            if (isCurrent) mainBg.color = currentLevelColor;
+            else if (isUnlocked) mainBg.color = unlockedColor;
+            else mainBg.color = lockedColor;
+        }
+
         Button btn = nodeObj.GetComponentInChildren<Button>(true);
         if (btn != null)
         {
@@ -431,15 +513,123 @@ public class LevelMapController : MonoBehaviour
             string lower = t.gameObject.name.ToLower();
             if (lower.Contains("number") || lower.Contains("level") || lower.Contains("label") || texts.Length == 1)
             {
-                t.text = isUnlocked ? levelNum.ToString() : "🔒";
+                t.text = isUnlocked ? levelNum.ToString() : "LOCK";
+                t.fontSize = isUnlocked ? (levelNum >= 100 ? 34 : 42) : 22;
             }
             else if (lower.Contains("star"))
             {
+                t.gameObject.SetActive(isUnlocked);
                 string starStr = "";
                 for (int s = 0; s < 3; s++) starStr += s < stars ? "★" : "☆";
                 t.text = isUnlocked ? starStr : "";
             }
         }
+
+        RefreshNodeBadge(nodeObj, levelNum, isUnlocked);
+    }
+
+    private void RefreshNodeBadge(GameObject nodeObj, int levelNum, bool isUnlocked)
+    {
+        Transform badgeTf = nodeObj.transform.Find("StageBadge");
+        string badgeText = string.Empty;
+        Color badgeColor = new Color(1f, 0.78f, 0.28f);
+
+        bool isMilestone = PlayerDataManager.HasInstance ? PlayerDataManager.Instance.IsMilestoneLevel(levelNum) : (levelNum > 0 && levelNum % 5 == 0);
+        bool chestClaimed = PlayerDataManager.HasInstance && PlayerDataManager.Instance.IsMilestoneChestClaimed(levelNum);
+
+        if (isMilestone)
+        {
+            badgeText = chestClaimed ? "CHEST ✓" : "CHEST";
+            badgeColor = chestClaimed ? new Color(0.55f, 0.92f, 0.58f) : new Color(1f, 0.85f, 0.22f);
+        }
+        else if (isUnlocked)
+        {
+            LevelDatabaseSO db = LevelDatabaseSO.LoadDefault();
+            LevelDataSO data = db != null ? db.GetLevel(levelNum) : null;
+            if (data != null && data.HasBlocks)
+            {
+                int count = data.GetRequiredBlockCount();
+                if (count > 0)
+                {
+                    badgeText = $"{count} BLK";
+                    badgeColor = new Color(1f, 0.68f, 0.3f);
+                }
+            }
+        }
+
+        if (string.IsNullOrEmpty(badgeText))
+        {
+            if (badgeTf != null) badgeTf.gameObject.SetActive(false);
+            return;
+        }
+
+        GameObject badgeObj;
+        TextMeshProUGUI tmp;
+        if (badgeTf == null)
+        {
+            badgeObj = new GameObject("StageBadge");
+            badgeObj.transform.SetParent(nodeObj.transform, false);
+            RectTransform brt = badgeObj.AddComponent<RectTransform>();
+            brt.anchorMin = new Vector2(0.5f, 1f);
+            brt.anchorMax = new Vector2(0.5f, 1f);
+            brt.pivot = new Vector2(0.5f, 0f);
+            brt.anchoredPosition = new Vector2(0f, 6f);
+            brt.sizeDelta = new Vector2(126f, 28f);
+
+            Image pillBg = badgeObj.AddComponent<Image>();
+            pillBg.color = new Color(0.08f, 0.1f, 0.16f, 0.92f);
+            pillBg.raycastTarget = false;
+
+            GameObject txtObj = new GameObject("BadgeText");
+            txtObj.transform.SetParent(badgeObj.transform, false);
+            RectTransform trt = txtObj.AddComponent<RectTransform>();
+            trt.anchorMin = Vector2.zero;
+            trt.anchorMax = Vector2.one;
+            trt.offsetMin = Vector2.zero;
+            trt.offsetMax = Vector2.zero;
+
+            tmp = txtObj.AddComponent<TextMeshProUGUI>();
+            tmp.fontSize = 15f;
+            tmp.fontStyle = FontStyles.Bold;
+            tmp.alignment = TextAlignmentOptions.Center;
+            tmp.raycastTarget = false;
+        }
+        else
+        {
+            badgeObj = badgeTf.gameObject;
+            badgeObj.SetActive(true);
+            tmp = badgeObj.GetComponentInChildren<TextMeshProUGUI>(true);
+        }
+
+        if (tmp != null)
+        {
+            tmp.text = badgeText;
+            tmp.color = badgeColor;
+        }
+    }
+
+    private static Sprite GetDefaultCircleSprite()
+    {
+        if (defaultCircleSprite != null) return defaultCircleSprite;
+
+        const int size = 64;
+        Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        tex.filterMode = FilterMode.Bilinear;
+        float radius = size * 0.5f;
+        Vector2 center = new Vector2(radius, radius);
+
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float d = Vector2.Distance(new Vector2(x, y), center);
+                float a = Mathf.Clamp01((radius - d) / 1.8f);
+                tex.SetPixel(x, y, new Color(1f, 1f, 1f, a));
+            }
+        }
+        tex.Apply();
+        defaultCircleSprite = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), size);
+        return defaultCircleSprite;
     }
 
     /// <summary>
@@ -477,7 +667,7 @@ public class LevelMapController : MonoBehaviour
             rt.sizeDelta = new Vector2(16f, 16f);
 
             Image img = dot.AddComponent<Image>();
-            if (pathDotSprite != null) img.sprite = pathDotSprite;
+            img.sprite = pathDotSprite != null ? pathDotSprite : GetDefaultCircleSprite();
             img.color = pathDotColor;
             img.raycastTarget = false;
         }
@@ -486,6 +676,7 @@ public class LevelMapController : MonoBehaviour
     private void OnLevelClicked(int levelNum)
     {
         Debug.Log($"[LevelMapController] Selected Level: {levelNum}");
+        GameEvents.OnPlaySFX?.Invoke("Click");
 
         if (GameplayController.HasInstance)
         {
@@ -573,8 +764,10 @@ public class LevelMapController : MonoBehaviour
         if (activeScrollRoutine != null)
         {
             StopCoroutine(activeScrollRoutine);
+            activeScrollRoutine = null;
         }
 
+        if (!gameObject.activeInHierarchy) return;
         activeScrollRoutine = StartCoroutine(SmoothScrollRoutine(targetLevel, duration));
     }
 
@@ -585,12 +778,18 @@ public class LevelMapController : MonoBehaviour
         yield return null; // Wait for layout updates
         Canvas.ForceUpdateCanvases();
 
-        float maxScrollHeight = contentRect.sizeDelta.y - scrollRect.viewport.rect.height;
-        if (maxScrollHeight <= 0) yield break;
+        RectTransform viewport = scrollRect.viewport != null ? scrollRect.viewport : (scrollRect.transform as RectTransform);
+        float viewportHeight = viewport != null ? viewport.rect.height : 900f;
+        float maxScrollHeight = contentRect.sizeDelta.y - viewportHeight;
+        if (maxScrollHeight <= 0)
+        {
+            activeScrollRoutine = null;
+            yield break;
+        }
 
         float targetY = cachedCumulativeY.TryGetValue(targetLevel, out float y) ? y : (startPadding + (targetLevel - 1) * stepY);
         // Center the level in the viewport
-        float viewportHalf = scrollRect.viewport.rect.height * 0.5f;
+        float viewportHalf = viewportHeight * 0.5f;
         float desiredOffset = Mathf.Clamp(targetY - viewportHalf, 0f, maxScrollHeight);
         float targetNormalized = Mathf.Clamp01(desiredOffset / maxScrollHeight);
 
@@ -599,6 +798,7 @@ public class LevelMapController : MonoBehaviour
         if (duration <= 0.05f)
         {
             scrollRect.verticalNormalizedPosition = finalNormalized;
+            activeScrollRoutine = null;
             yield break;
         }
 

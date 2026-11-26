@@ -167,7 +167,11 @@ public class LevelWinPanel : UIBasePanel
         rt.sizeDelta = new Vector2(760f, 64f);
 
         coinBonusText = obj.AddComponent<TextMeshProUGUI>();
-        coinBonusText.fontSize = 24f;
+        if (scoreText != null && scoreText.font != null)
+        {
+            coinBonusText.font = scoreText.font;
+        }
+        coinBonusText.fontSize = 23f;
         coinBonusText.fontStyle = FontStyles.Bold;
         coinBonusText.color = new Color(1f, 0.88f, 0.28f);
         coinBonusText.alignment = TextAlignmentOptions.Center;
@@ -177,19 +181,23 @@ public class LevelWinPanel : UIBasePanel
     {
         StopChestRoutine();
         Debug.Log("[LevelWinPanel] Next level clicked.");
+        if (uiManager != null)
+        {
+            uiManager.HidePanel<LevelWinPanel>();
+        }
+
         if (GameplayController.HasInstance)
         {
             GameplayController.Instance.StartLevelMode(currentLevelNumber + 1);
         }
 
-        if (uiManager != null)
-        {
-            uiManager.ShowPanel<GameplayHUDPanel>();
-        }
-
         if (GameManager.HasInstance)
         {
             GameManager.Instance.RestartGame();
+        }
+        else if (uiManager != null)
+        {
+            uiManager.ShowPanel<GameplayHUDPanel>();
         }
     }
 
@@ -198,12 +206,16 @@ public class LevelWinPanel : UIBasePanel
         StopChestRoutine();
         if (uiManager != null)
         {
-            uiManager.ShowPanel<GameplayHUDPanel>();
+            uiManager.HidePanel<LevelWinPanel>();
         }
 
         if (GameManager.HasInstance)
         {
             GameManager.Instance.RestartGame();
+        }
+        else if (uiManager != null)
+        {
+            uiManager.ShowPanel<GameplayHUDPanel>();
         }
     }
 
@@ -212,12 +224,16 @@ public class LevelWinPanel : UIBasePanel
         StopChestRoutine();
         if (uiManager != null)
         {
-            uiManager.ShowPanel<MainMenuPanel>();
+            uiManager.HidePanel<LevelWinPanel>();
         }
 
         if (GameManager.HasInstance)
         {
             GameManager.Instance.ReturnToMainMenu();
+        }
+        else if (uiManager != null)
+        {
+            uiManager.ShowPanel<MainMenuPanel>();
         }
     }
 }

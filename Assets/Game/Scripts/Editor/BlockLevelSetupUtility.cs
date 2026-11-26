@@ -25,6 +25,8 @@ public static class BlockLevelSetupUtility
     public const string BLOCK_LIBRARY_PATH = "Assets/Resources/BallMerge/BlockLibrary.asset";
     public const string LEVEL_DATABASE_PATH = "Assets/Resources/BallMerge/LevelDatabase.asset";
     public const string BLOCK_TESTING_SCENE_PATH = "Assets/Scenes/Block testing.unity";
+    public const string GAME_TEST_SCENE_PATH = "Assets/Game/Scene/GameTest.unity";
+    public const string LEVEL_SCROLL_PREFAB_PATH = "Assets/New Ideas/Scroll/Prefab/LevelScrollView.prefab";
 
     static BlockLevelSetupUtility()
     {
@@ -34,8 +36,8 @@ public static class BlockLevelSetupUtility
     private static void AutoInitializeBlockSystemOnce()
     {
         if (EditorApplication.isPlayingOrWillChangePlaymode) return;
-        if (SessionState.GetBool("BallMerge_BlockInitV3Checked", false)) return;
-        SessionState.SetBool("BallMerge_BlockInitV3Checked", true);
+        if (SessionState.GetBool("BallMerge_BlockInitV5Checked", false)) return;
+        SessionState.SetBool("BallMerge_BlockInitV5Checked", true);
 
         BlockLibrarySO existingLib = AssetDatabase.LoadAssetAtPath<BlockLibrarySO>(BLOCK_LIBRARY_PATH);
         bool needsUpgrade = existingLib == null
@@ -59,6 +61,10 @@ public static class BlockLevelSetupUtility
              || GameObject.Find("ThemeCycleButton") == null))
         {
             SetupBlockTestingScene();
+        }
+        else if (activeScene.path == GAME_TEST_SCENE_PATH && !activeScene.isDirty && NeedsGameTestUpgrade())
+        {
+            UpgradeGameTestSceneInternal(saveScene: true);
         }
     }
 
@@ -899,6 +905,240 @@ public static class BlockLevelSetupUtility
         if (!AssetDatabase.IsValidFolder(parent)) EnsureFolderExists(parent);
         AssetDatabase.CreateFolder(parent, folder);
         AssetDatabase.Refresh();
+    }
+
+    [MenuItem("Tools/Ball Merge/6. Wire New Features Into GameTest Scene (Keep Existing Flow)")]
+    public static void UpgradeGameTestSceneNonDestructive()
+    {
+        BallMergeAssetCreator.GenerateDefaultAssets();
+        GenerateAllBlockAssetsAndSampleLevels();
+
+        if (!File.Exists(GAME_TEST_SCENE_PATH))
+        {
+            Debug.LogWarning($"[BlockLevelSetupUtility] Scene not found at {GAME_TEST_SCENE_PATH}");
+            return;
+        }
+
+        Scene active = SceneManager.GetActiveScene();
+        if (active.path != GAME_TEST_SCENE_PATH)
+        {
+            if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+            EditorSceneManager.OpenScene(GAME_TEST_SCENE_PATH, OpenSceneMode.Single);
+        }
+
+        UpgradeGameTestSceneInternal(saveScene: true);
+    }
+
+    private static bool NeedsGameTestUpgrade()
+    {
+        if (UnityEngine.Object.FindAnyObjectByType<LevelBlockManager>(FindObjectsInactive.Include) == null) return true;
+        if (UnityEngine.Object.FindAnyObjectByType<ThemeAnimatedBackground>(FindObjectsInactive.Include) == null) return true;
+        Camera cam = Camera.main;
+        if (cam != null && cam.GetComponent<CameraShake2D>() == null) return true;
+        GameplayHUDPanel hud = UnityEngine.Object.FindAnyObjectByType<GameplayHUDPanel>(FindObjectsInactive.Include);
+        if (hud != null && hud.transform.Find("BlocksContainer") == null) return true;
+        LevelSelectionPanel lp = UnityEngine.Object.FindAnyObjectByType<LevelSelectionPanel>(FindObjectsInactive.Include);
+        if (lp != null && lp.GetComponentInChildren<LevelMapController>(true) == null) return true;
+        return false;
+    }
+
+    private static void UpgradeGameTestSceneInternal(bool saveScene)
+    {
+        int changes = 0;
+
+        Camera cam = Camera.main;
+        if (cam != null && cam.GetComponent<CameraShake2D>() == null)
+        {
+            cam.gameObject.AddComponent<CameraShake2D>();
+            changes++;
+        }
+
+        GameplayController gc = UnityEngine.Object.FindAnyObjectByType<GameplayController>(FindObjectsInactive.Include);
+        if (gc != null)
+        {
+            LevelBlockManager bm = UnityEngine.Object.FindAnyObjectByType<LevelBlockManager>(FindObjectsInactive.Include);
+            if (bm == null)
+            {
+                GameObject bmObj = new GameObject("LevelBlockManager");
+                bmObj.transform.SetParent(gc.transform, false);
+                bm = bmObj.AddComponent<LevelBlockManager>();
+                changes++;
+            }
+
+            ThemeAnimatedBackground bg = UnityEngine.Object.FindAnyObjectByType<ThemeAnimatedBackground>(FindObjectsInactive.Include);
+            if (bg == null)
+            {
+                GameObject bgObj = new GameObject("ThemeAnimatedBackground");
+                bgObj.transform.SetParent(gc.transform, false);
+                bg = bgObj.AddComponent<ThemeAnimatedBackground>();
+                changes++;
+            }
+
+            SerializedObject gcSo = new SerializedObject(gc);
+            SerializedProperty bmProp = gcSo.FindProperty("blockManager");
+            if (bmProp != null && bmProp.objectReferenceValue == null)
+            {
+                bmProp.objectReferenceValue = bm;
+                changes++;
+            }
+            SerializedProperty bgProp = gcSo.FindProperty("animatedBackground");
+            if (bgProp != null && bgProp.objectReferenceValue == null)
+            {
+                bgProp.objectReferenceValue = bg;
+                changes++;
+            }
+            gcSo.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        GameplayHUDPanel hud = UnityEngine.Object.FindAnyObjectByType<GameplayHUDPanel>(FindObjectsInactive.Include);
+        if (hud != null)
+        {
+            SerializedObject hudSo = new SerializedObject(hud);
+            SerializedProperty blocksContProp = hudSo.FindProperty("blocksContainer");
+            SerializedProperty blocksTxtProp = hudSo.FindProperty("blocksText");
+            if (blocksContProp != null && blocksContProp.objectReferenceValue == null)
+            {
+                Transform existing = hud.transform.Find("BlocksContainer");
+                GameObject blocksObj = existing != null ? existing.gameObject : null;
+                TMP_Text blocksTmp = blocksObj != null ? blocksObj.GetComponentInChildren<TMP_Text>(true) : null;
+
+                if (blocksObj == null)
+                {
+                    SerializedProperty dropsContProp = hudSo.FindProperty("dropsContainer");
+                    SerializedProperty dropsTxtProp = hudSo.FindProperty("dropsText");
+                    GameObject dropsObj = dropsContProp != null ? dropsContProp.objectReferenceValue as GameObject : null;
+                    TMP_Text dropsTmp = dropsTxtProp != null ? dropsTxtProp.objectReferenceValue as TMP_Text : null;
+
+                    blocksObj = new GameObject("BlocksContainer");
+                    blocksObj.transform.SetParent(hud.transform, false);
+                    RectTransform rt = blocksObj.AddComponent<RectTransform>();
+                    if (dropsObj != null)
+                    {
+                        RectTransform drt = dropsObj.GetComponent<RectTransform>();
+                        rt.anchorMin = drt.anchorMin;
+                        rt.anchorMax = drt.anchorMax;
+                        rt.pivot = drt.pivot;
+                        rt.anchoredPosition = drt.anchoredPosition + new Vector2(0f, -55f);
+                        rt.sizeDelta = new Vector2(drt.sizeDelta.x, 50f);
+                    }
+                    else
+                    {
+                        rt.anchoredPosition = new Vector2(360f, 785f);
+                        rt.sizeDelta = new Vector2(300f, 50f);
+                    }
+
+                    blocksTmp = CreateUIText(blocksObj, "BlocksText", "BLOCKS: 0 / 0", Vector2.zero, rt.sizeDelta, 26f, new Color(1f, 0.72f, 0.25f), TextAlignmentOptions.Right);
+                    RectTransform txtRt = blocksTmp.rectTransform;
+                    txtRt.anchorMin = Vector2.zero;
+                    txtRt.anchorMax = Vector2.one;
+                    txtRt.offsetMin = Vector2.zero;
+                    txtRt.offsetMax = Vector2.zero;
+                    if (dropsTmp != null && dropsTmp.font != null) blocksTmp.font = dropsTmp.font;
+                }
+
+                blocksContProp.objectReferenceValue = blocksObj;
+                if (blocksTxtProp != null) blocksTxtProp.objectReferenceValue = blocksTmp;
+                hudSo.ApplyModifiedPropertiesWithoutUndo();
+                changes++;
+            }
+        }
+
+        LevelWinPanel winPanel = UnityEngine.Object.FindAnyObjectByType<LevelWinPanel>(FindObjectsInactive.Include);
+        if (winPanel != null)
+        {
+            SerializedObject winSo = new SerializedObject(winPanel);
+            SerializedProperty coinProp = winSo.FindProperty("coinBonusText");
+            if (coinProp != null && coinProp.objectReferenceValue == null)
+            {
+                Transform windowBox = winPanel.transform.Find("WindowBox");
+                if (windowBox != null)
+                {
+                    Transform existing = windowBox.Find("CoinBonusText");
+                    TMP_Text coinTmp = existing != null ? existing.GetComponent<TMP_Text>() : null;
+                    if (coinTmp == null)
+                    {
+                        coinTmp = CreateUIText(windowBox.gameObject, "CoinBonusText", "", new Vector2(0f, 22f), new Vector2(760f, 56f), 23f, new Color(1f, 0.88f, 0.28f), TextAlignmentOptions.Center);
+                        SerializedProperty scoreProp = winSo.FindProperty("scoreText");
+                        TMP_Text scoreTmp = scoreProp != null ? scoreProp.objectReferenceValue as TMP_Text : null;
+                        if (scoreTmp != null && scoreTmp.font != null) coinTmp.font = scoreTmp.font;
+                    }
+                    coinProp.objectReferenceValue = coinTmp;
+                    winSo.ApplyModifiedPropertiesWithoutUndo();
+                    changes++;
+                }
+            }
+        }
+
+        LevelSelectionPanel levelPanel = UnityEngine.Object.FindAnyObjectByType<LevelSelectionPanel>(FindObjectsInactive.Include);
+        if (levelPanel != null && levelPanel.GetComponentInChildren<LevelMapController>(true) == null)
+        {
+            Transform mapHost = levelPanel.transform.Find("GridCard");
+            if (mapHost == null) mapHost = levelPanel.transform;
+
+            GameObject scrollPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(LEVEL_SCROLL_PREFAB_PATH);
+            if (scrollPrefab != null)
+            {
+                Transform legacyScroll = mapHost.Find("ScrollView");
+                if (legacyScroll != null)
+                {
+                    UnityEngine.Object.DestroyImmediate(legacyScroll.gameObject);
+                }
+
+                GameObject scrollInstance = PrefabUtility.InstantiatePrefab(scrollPrefab, mapHost) as GameObject;
+                if (scrollInstance != null)
+                {
+                    scrollInstance.name = "LevelScrollView";
+                    RectTransform srt = scrollInstance.GetComponent<RectTransform>();
+                    if (srt != null)
+                    {
+                        srt.anchorMin = Vector2.zero;
+                        srt.anchorMax = Vector2.one;
+                        srt.pivot = new Vector2(0.5f, 0.5f);
+                        srt.offsetMin = new Vector2(16f, 16f);
+                        srt.offsetMax = new Vector2(-16f, -16f);
+                        srt.localScale = Vector3.one;
+                    }
+
+                    Image bgImg = scrollInstance.GetComponent<Image>();
+                    if (bgImg != null)
+                    {
+                        bgImg.color = new Color(0.06f, 0.09f, 0.16f, 0.92f);
+                    }
+
+                    LevelMapController lmc = scrollInstance.GetComponent<LevelMapController>();
+                    if (lmc != null)
+                    {
+                        SerializedObject lmcSo = new SerializedObject(lmc);
+                        SerializedProperty loadAllProp = lmcSo.FindProperty("loadAllInitially");
+                        if (loadAllProp != null) loadAllProp.boolValue = false;
+                        SerializedProperty initCountProp = lmcSo.FindProperty("initialLoadCount");
+                        if (initCountProp != null) initCountProp.intValue = 50;
+                        SerializedProperty batchProp = lmcSo.FindProperty("batchLoadCount");
+                        if (batchProp != null) batchProp.intValue = 25;
+                        lmcSo.ApplyModifiedPropertiesWithoutUndo();
+                    }
+
+                    SerializedObject lpSo = new SerializedObject(levelPanel);
+                    SerializedProperty lmcProp = lpSo.FindProperty("levelMapController");
+                    if (lmcProp != null) lmcProp.objectReferenceValue = lmc;
+                    SerializedProperty gridProp = lpSo.FindProperty("levelGridContainer");
+                    if (gridProp != null) gridProp.objectReferenceValue = null;
+                    lpSo.ApplyModifiedPropertiesWithoutUndo();
+                    changes++;
+                }
+            }
+        }
+
+        if (changes > 0)
+        {
+            Scene scene = SceneManager.GetActiveScene();
+            EditorSceneManager.MarkSceneDirty(scene);
+            if (saveScene)
+            {
+                EditorSceneManager.SaveScene(scene);
+            }
+            Debug.Log($"[BlockLevelSetupUtility] Non-destructively upgraded GameTest.unity ({changes} addition(s)) while keeping existing UI & flow intact.");
+        }
     }
 }
 #endif

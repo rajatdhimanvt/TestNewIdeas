@@ -15,6 +15,7 @@ public static class GameEvents
     public static Action<int, Vector3> OnScoreAddedAtPosition; // (scorePoints, worldPosition)
     public static Action<int> OnHighScoreChanged;
     public static Action OnBallDropped;
+    public static Action OnNextBallUpdated;
     public static Action<int> OnRemainingDropsChanged; // remaining drops count
     public static Action<int> OnBonusDropsEarned; // extra drops awarded from special blocks
     public static Action<int> OnLevelStarted;
@@ -45,6 +46,7 @@ public static class GameEvents
         OnScoreAddedAtPosition = null;
         OnHighScoreChanged = null;
         OnBallDropped = null;
+        OnNextBallUpdated = null;
         OnRemainingDropsChanged = null;
         OnBonusDropsEarned = null;
         OnLevelStarted = null;
