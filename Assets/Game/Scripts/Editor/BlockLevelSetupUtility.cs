@@ -26,7 +26,7 @@ public static class BlockLevelSetupUtility
     public const string LEVEL_DATABASE_PATH = "Assets/Resources/BallMerge/LevelDatabase.asset";
     public const string BLOCK_TESTING_SCENE_PATH = "Assets/Scenes/Block testing.unity";
     public const string GAME_TEST_SCENE_PATH = "Assets/Game/Scene/GameTest.unity";
-    public const string LEVEL_SCROLL_PREFAB_PATH = "Assets/New Ideas/Scroll/Prefab/LevelScrollView.prefab";
+    public const string LEVEL_SCROLL_PREFAB_PATH = "Assets/Game/Prefab/ui Panels/LevelScrollView.prefab";
 
     static BlockLevelSetupUtility()
     {
