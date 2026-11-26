@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using DG.Tweening;
 using UnityEngine;
 
 /// <summary>
@@ -247,6 +248,49 @@ public class LevelBlockManager : Singleton<LevelBlockManager>
         {
             GameEvents.OnPlaySFX?.Invoke("KeyUnlock");
         }
+    }
+
+    public void TryTeleportBall(Ball ball, DestructibleBlock entryPortal)
+    {
+        if (ball == null || entryPortal == null) return;
+
+        int channel = entryPortal.LockChannel;
+        List<DestructibleBlock> matchingExits = new List<DestructibleBlock>();
+        for (int i = 0; i < activeBlocks.Count; i++)
+        {
+            DestructibleBlock b = activeBlocks[i];
+            if (b == null || b.IsDestroyed || b.BehaviorType != BlockBehaviorType.PortalExit) continue;
+            if (channel == 0 || b.LockChannel == 0 || b.LockChannel == channel)
+            {
+                matchingExits.Add(b);
+            }
+        }
+
+        if (matchingExits.Count == 0) return;
+
+        DestructibleBlock exitPortal = matchingExits[Random.Range(0, matchingExits.Count)];
+        ball.NotifyTeleported(0.45f);
+
+        entryPortal.PlayPortalPulse(new Color(0.2f, 0.85f, 1f, 0.9f));
+        BlockRuntimeVisuals.SpawnDebrisBurst(entryPortal.transform.position, new Color(0.2f, 0.85f, 1f), count: 8, speed: 2.5f, scale: 0.1f);
+
+        Vector3 destPos = exitPortal.transform.position;
+        ball.transform.position = new Vector3(destPos.x, destPos.y, ball.transform.position.z);
+
+        if (ball.Rigidbody != null)
+        {
+            Vector2 vel = ball.Rigidbody.linearVelocity;
+            vel.y = Mathf.Min(vel.y, -2.2f);
+            ball.Rigidbody.linearVelocity = vel;
+        }
+
+        float targetDiameter = ball.Data != null ? ball.Data.radius * 2f : ball.transform.localScale.x;
+        ball.transform.localScale = Vector3.one * (targetDiameter * 0.45f);
+        ball.transform.DOScale(targetDiameter, 0.22f).SetEase(Ease.OutBack).SetLink(ball.gameObject);
+
+        exitPortal.PlayPortalPulse(new Color(1f, 0.45f, 0.92f, 0.9f));
+        BlockRuntimeVisuals.SpawnDebrisBurst(destPos, new Color(1f, 0.45f, 0.92f), count: 10, speed: 3.0f, scale: 0.11f);
+        GameEvents.OnPlaySFX?.Invoke("Teleport");
     }
 
     public void NotifyBlockDestroyed(DestructibleBlock block)

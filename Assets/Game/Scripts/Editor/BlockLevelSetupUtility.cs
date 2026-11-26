@@ -34,14 +34,17 @@ public static class BlockLevelSetupUtility
     private static void AutoInitializeBlockSystemOnce()
     {
         if (EditorApplication.isPlayingOrWillChangePlaymode) return;
-        if (SessionState.GetBool("BallMerge_BlockInitV2Checked", false)) return;
-        SessionState.SetBool("BallMerge_BlockInitV2Checked", true);
+        if (SessionState.GetBool("BallMerge_BlockInitV3Checked", false)) return;
+        SessionState.SetBool("BallMerge_BlockInitV3Checked", true);
 
         BlockLibrarySO existingLib = AssetDatabase.LoadAssetAtPath<BlockLibrarySO>(BLOCK_LIBRARY_PATH);
         bool needsUpgrade = existingLib == null
                             || !File.Exists(LEVEL_DATABASE_PATH)
                             || existingLib.GetById("ice_frozen") == null
-                            || existingLib.GetById("magnet_block") == null;
+                            || existingLib.GetById("magnet_block") == null
+                            || existingLib.GetById("portal_entry") == null
+                            || !File.Exists($"{LEVELS_FOLDER}/Level_09.asset")
+                            || !File.Exists($"{BlockSpriteGenerator.UI_RESOURCES_FOLDER}/Chest_Closed.png");
 
         if (needsUpgrade)
         {
@@ -51,7 +54,9 @@ public static class BlockLevelSetupUtility
 
         Scene activeScene = SceneManager.GetActiveScene();
         if (activeScene.path == BLOCK_TESTING_SCENE_PATH && !activeScene.isDirty &&
-            (UnityEngine.Object.FindAnyObjectByType<BlockTestingController>() == null || GameObject.Find("BlocksProgressFill") == null))
+            (UnityEngine.Object.FindAnyObjectByType<BlockTestingController>() == null
+             || UnityEngine.Object.FindAnyObjectByType<ThemeAnimatedBackground>() == null
+             || GameObject.Find("ThemeCycleButton") == null))
         {
             SetupBlockTestingScene();
         }
@@ -248,7 +253,29 @@ public static class BlockLevelSetupUtility
                 baseCol: Color.white,
                 accentCol: new Color(0.95f, 0.28f, 0.82f),
                 particleCol: new Color(1.0f, 0.45f, 0.95f),
-                behavior: BlockBehaviorType.BumperPad, friction: 0.05f, bounciness: 0.95f)
+                behavior: BlockBehaviorType.BumperPad, friction: 0.05f, bounciness: 0.95f),
+
+            CreateOrUpdateBlockDef("portal_entry", "Portal Entry", BlockCategory.Special,
+                "Swirling teleport vortex! Dropped balls entering it warp directly to matching Portal Exit.",
+                isDestructible: false, required: false, hp: 1, score: 0, bonusDrops: 0, explode: false,
+                size: new Vector2(0.86f, 0.86f),
+                sprite: BlockSpriteGenerator.LoadSprite("Block_Portal_Entry.png"),
+                cracks: null,
+                baseCol: Color.white,
+                accentCol: new Color(0.15f, 0.82f, 1.0f),
+                particleCol: new Color(0.2f, 0.85f, 1.0f),
+                behavior: BlockBehaviorType.PortalEntry),
+
+            CreateOrUpdateBlockDef("portal_exit", "Portal Exit", BlockCategory.Special,
+                "Exit vortex where teleported balls emerge (ideal behind shelves or in hidden pockets!).",
+                isDestructible: false, required: false, hp: 1, score: 0, bonusDrops: 0, explode: false,
+                size: new Vector2(0.86f, 0.86f),
+                sprite: BlockSpriteGenerator.LoadSprite("Block_Portal_Exit.png"),
+                cracks: null,
+                baseCol: Color.white,
+                accentCol: new Color(0.96f, 0.42f, 0.92f),
+                particleCol: new Color(1.0f, 0.45f, 0.92f),
+                behavior: BlockBehaviorType.PortalExit)
         };
 
         BlockLibrarySO library = AssetDatabase.LoadAssetAtPath<BlockLibrarySO>(BLOCK_LIBRARY_PATH);
@@ -360,6 +387,8 @@ public static class BlockLevelSetupUtility
         BlockDefinitionSO lockedBlock = library.GetById("locked_block");
         BlockDefinitionSO magnetBlock = library.GetById("magnet_block");
         BlockDefinitionSO bumperPad = library.GetById("bumper_pad");
+        BlockDefinitionSO portalEntry = library.GetById("portal_entry");
+        BlockDefinitionSO portalExit = library.GetById("portal_exit");
 
         // Level 1: Matches the user's sketch layout (4 crates resting on brown ledges!)
         CreateSampleLevelIfMissing($"{LEVELS_FOLDER}/Level_01.asset", 1, "Crate Valley", 20, 400, classicKit, new List<LevelBlockPlacement>
@@ -447,6 +476,18 @@ public static class BlockLevelSetupUtility
             MakeBlock(stoneBlock, new Vector2(-1.10f, -1.95f), new Vector2(0.90f, 0.90f), 0f, hp: 3, shelf: true),
             MakeBlock(stoneBlock, new Vector2(1.10f, -1.95f), new Vector2(0.90f, 0.90f), 0f, hp: 3, shelf: true),
             MakeBlock(bonusCrate, new Vector2(0.0f, -2.85f), new Vector2(0.82f, 0.82f), 0f, hp: 2, shelf: false)
+        });
+
+        // Level 9: Warp Pocket (Teleport Portals bypass sealed shelf into hidden pocket!)
+        CreateSampleLevelIfMissing($"{LEVELS_FOLDER}/Level_09.asset", 9, "Warp Pocket", 28, 1250, classicKit, new List<LevelBlockPlacement>
+        {
+            MakeBlock(portalEntry, new Vector2(1.45f, 1.35f), new Vector2(0.86f, 0.86f), 0f, hp: 0, shelf: false),
+            MakeBlock(normalCrate, new Vector2(-1.25f, 1.15f), new Vector2(0.86f, 0.86f), 0f, hp: 2, shelf: true),
+            MakeBlock(woodShelf, new Vector2(-0.45f, -0.15f), new Vector2(3.60f, 0.22f), 0f, hp: 0, shelf: false),
+            MakeBlock(portalExit, new Vector2(-0.85f, -1.05f), new Vector2(0.86f, 0.86f), 0f, hp: 0, shelf: false),
+            MakeBlock(bombCrate, new Vector2(0.15f, -2.55f), new Vector2(0.85f, 0.85f), 0f, hp: 1, shelf: false),
+            MakeBlock(stoneBlock, new Vector2(-1.25f, -2.55f), new Vector2(0.90f, 0.90f), 0f, hp: 3, shelf: false),
+            MakeBlock(normalCrate, new Vector2(1.35f, -2.55f), new Vector2(0.86f, 0.86f), 0f, hp: 2, shelf: false)
         });
 
         return SyncAllLevelsToDatabase();
@@ -584,16 +625,30 @@ public static class BlockLevelSetupUtility
 
         BallKitManager bkm = EnsureComp<BallKitManager>(managersObj);
         BallKitSO classicKit = AssetDatabase.LoadAssetAtPath<BallKitSO>("Assets/Game/Data/Kits/BallKit_classic_kit.asset");
-        if (classicKit != null)
+        BallKitSO oceanKit = AssetDatabase.LoadAssetAtPath<BallKitSO>("Assets/Game/Data/Kits/BallKit_ocean_kit.asset");
+        BallKitSO skyKit = AssetDatabase.LoadAssetAtPath<BallKitSO>("Assets/Game/Data/Kits/BallKit_sky_kit.asset");
+        var allKits = new List<BallKitSO>();
+        if (classicKit != null) allKits.Add(classicKit);
+        if (oceanKit != null) allKits.Add(oceanKit);
+        if (skyKit != null) allKits.Add(skyKit);
+        if (allKits.Count > 0)
         {
-            bkm.RegisterKits(new List<BallKitSO> { classicKit }, classicKit);
+            bkm.RegisterKits(allKits, classicKit ?? allKits[0]);
         }
 
         ThemeManager tm = EnsureComp<ThemeManager>(managersObj);
         ThemeDataSO darkTheme = AssetDatabase.LoadAssetAtPath<ThemeDataSO>("Assets/Game/Data/Themes/ThemeData_dark_theme.asset");
-        if (darkTheme != null)
+        ThemeDataSO oceanTheme = AssetDatabase.LoadAssetAtPath<ThemeDataSO>("Assets/Game/Data/Themes/ThemeData_ocean_theme.asset");
+        ThemeDataSO skyTheme = AssetDatabase.LoadAssetAtPath<ThemeDataSO>("Assets/Game/Data/Themes/ThemeData_sky_theme.asset");
+        ThemeDataSO sunsetTheme = AssetDatabase.LoadAssetAtPath<ThemeDataSO>("Assets/Game/Data/Themes/ThemeData_sunset_theme.asset");
+        var allThemes = new List<ThemeDataSO>();
+        if (darkTheme != null) allThemes.Add(darkTheme);
+        if (oceanTheme != null) allThemes.Add(oceanTheme);
+        if (skyTheme != null) allThemes.Add(skyTheme);
+        if (sunsetTheme != null) allThemes.Add(sunsetTheme);
+        if (allThemes.Count > 0)
         {
-            tm.RegisterThemes(new List<ThemeDataSO> { darkTheme }, darkTheme);
+            tm.RegisterThemes(allThemes, darkTheme ?? allThemes[0]);
         }
 
         // 3. [Gameplay]
@@ -601,6 +656,9 @@ public static class BlockLevelSetupUtility
         if (gameplayObj == null) gameplayObj = new GameObject("[Gameplay]");
 
         GameplayController gc = EnsureComp<GameplayController>(gameplayObj);
+
+        GameObject bgAnimObj = EnsureChild(gameplayObj, "ThemeAnimatedBackground");
+        EnsureComp<ThemeAnimatedBackground>(bgAnimObj);
 
         GameObject containerObj = EnsureChild(gameplayObj, "ContainerBoundary");
         ContainerBoundary cb = EnsureComp<ContainerBoundary>(containerObj);
@@ -699,19 +757,28 @@ public static class BlockLevelSetupUtility
         Image nextImg = CreateUIImage(nextBox.gameObject, "NextBallImg", new Vector2(0, 0), new Vector2(48, 48), Color.white);
         TMP_Text nextName = CreateUIText(nextBox.gameObject, "NextBallName", "Cherry", new Vector2(0, -45), new Vector2(145, 30), 20, Color.white, TextAlignmentOptions.Center);
 
+        // Coins & Theme Switcher card in top-right below bar
+        Image rightBox = CreateSlicedImage(canvasObj, "ThemeCoinsBox", new Vector2(422, 685), new Vector2(190, 136),
+            spFrameCyan, new Color(0.12f, 0.14f, 0.2f, 0.9f));
+        TMP_Text coinsTxt = CreateUIText(rightBox.gameObject, "CoinsBalanceText", "COINS: 200", new Vector2(0, 38), new Vector2(175, 34), 22, new Color(1f, 0.88f, 0.28f), TextAlignmentOptions.Center);
+        Button themeBtn = CreateStyledButton(rightBox.gameObject, "ThemeCycleButton", "THEME", new Vector2(0, -14), new Vector2(160, 50), spBtnBlue, new Color(0.26f, 0.42f, 0.72f));
+        TMP_Text themeLbl = themeBtn.GetComponentInChildren<TMP_Text>();
+        if (themeLbl != null) themeLbl.fontSize = 18;
+
         // Bottom Tip Footer
         CreateUIText(canvasObj, "GameplayTip", "Aim & release to drop balls. Merge beside blocks to crack & break them!",
             new Vector2(0, -900), new Vector2(1020, 60), 23, new Color(0.72f, 0.78f, 0.88f, 0.85f), TextAlignmentOptions.Center);
 
         // Result Overlay
         Image overlay = CreateUIImage(canvasObj, "ResultOverlay", Vector2.zero, new Vector2(1080, 1920), new Color(0f, 0f, 0f, 0.78f));
-        Image card = CreateSlicedImage(overlay.gameObject, "ResultCard", Vector2.zero, new Vector2(810, 620),
+        Image card = CreateSlicedImage(overlay.gameObject, "ResultCard", Vector2.zero, new Vector2(820, 690),
             spFrameBlue, new Color(0.13f, 0.16f, 0.23f, 1f));
-        TMP_Text resTitle = CreateUIText(card.gameObject, "ResultTitle", "LEVEL CLEARED!", new Vector2(0, 210), new Vector2(740, 86), 52, new Color(0.25f, 0.95f, 0.55f), TextAlignmentOptions.Center);
-        TMP_Text resStars = CreateUIText(card.gameObject, "ResultStars", "★ ★ ★", new Vector2(0, 130), new Vector2(700, 68), 50, new Color(1.0f, 0.86f, 0.24f), TextAlignmentOptions.Center);
-        TMP_Text resSub = CreateUIText(card.gameObject, "ResultSubtitle", "Score: 0", new Vector2(0, 45), new Vector2(720, 80), 28, Color.white, TextAlignmentOptions.Center);
-        Button resNext = CreateStyledButton(card.gameObject, "ResultNextButton", "NEXT LEVEL", new Vector2(0, -90), new Vector2(440, 92), spBtnGreen, new Color(0.18f, 0.78f, 0.44f));
-        Button resRetry = CreateStyledButton(card.gameObject, "ResultRetryButton", "REPLAY LEVEL", new Vector2(0, -205), new Vector2(440, 92), spBtnBlue, new Color(0.22f, 0.56f, 0.88f));
+        TMP_Text resTitle = CreateUIText(card.gameObject, "ResultTitle", "LEVEL CLEARED!", new Vector2(0, 250), new Vector2(740, 82), 52, new Color(0.25f, 0.95f, 0.55f), TextAlignmentOptions.Center);
+        TMP_Text resStars = CreateUIText(card.gameObject, "ResultStars", "★ ★ ★", new Vector2(0, 175), new Vector2(700, 66), 48, new Color(1.0f, 0.86f, 0.24f), TextAlignmentOptions.Center);
+        TMP_Text resSub = CreateUIText(card.gameObject, "ResultSubtitle", "Score: 0", new Vector2(0, 102), new Vector2(740, 54), 27, Color.white, TextAlignmentOptions.Center);
+        TMP_Text resCoins = CreateUIText(card.gameObject, "ResultCoinBonusText", "+0 COINS EARNED!", new Vector2(0, 22), new Vector2(760, 84), 26, new Color(1.0f, 0.88f, 0.28f), TextAlignmentOptions.Center);
+        Button resNext = CreateStyledButton(card.gameObject, "ResultNextButton", "NEXT LEVEL", new Vector2(0, -120), new Vector2(440, 92), spBtnGreen, new Color(0.18f, 0.78f, 0.44f));
+        Button resRetry = CreateStyledButton(card.gameObject, "ResultRetryButton", "REPLAY LEVEL", new Vector2(0, -234), new Vector2(440, 92), spBtnBlue, new Color(0.22f, 0.56f, 0.88f));
         overlay.gameObject.SetActive(false);
 
         SerializedObject btcSo = new SerializedObject(btc);
@@ -726,16 +793,20 @@ public static class BlockLevelSetupUtility
         SetProp(btcSo, "blocksProgressFill", progFill);
         SetProp(btcSo, "dropsText", dropsTxt);
         SetProp(btcSo, "scoreText", scoreTxt);
+        SetProp(btcSo, "coinsBalanceText", coinsTxt);
         SetProp(btcSo, "nextBallNameText", nextName);
         SetProp(btcSo, "nextBallImage", nextImg);
         SetProp(btcSo, "prevLevelButton", prevBtn);
         SetProp(btcSo, "nextLevelButton", nextBtn);
         SetProp(btcSo, "restartButton", restartBtn);
+        SetProp(btcSo, "themeCycleButton", themeBtn);
+        SetProp(btcSo, "themeLabelText", themeLbl);
         SetProp(btcSo, "resultOverlay", overlay.gameObject);
         SetProp(btcSo, "resultCard", card.transform);
         SetProp(btcSo, "resultTitleText", resTitle);
         SetProp(btcSo, "resultStarsText", resStars);
         SetProp(btcSo, "resultSubtitleText", resSub);
+        SetProp(btcSo, "resultCoinBonusText", resCoins);
         SetProp(btcSo, "resultNextButton", resNext);
         SetProp(btcSo, "resultRetryButton", resRetry);
         btcSo.ApplyModifiedPropertiesWithoutUndo();

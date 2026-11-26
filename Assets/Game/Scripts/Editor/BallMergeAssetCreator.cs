@@ -362,6 +362,18 @@ public static class BallMergeAssetCreator
             blockMgrObj.AddComponent<LevelBlockManager>();
         }
 
+        // 6c. Setup ThemeAnimatedBackground
+        GameObject bgFxObj = GameObject.Find("ThemeAnimatedBackground");
+        if (bgFxObj == null)
+        {
+            bgFxObj = new GameObject("ThemeAnimatedBackground");
+            bgFxObj.transform.SetParent(gameplayObj.transform);
+        }
+        if (bgFxObj.GetComponent<ThemeAnimatedBackground>() == null)
+        {
+            bgFxObj.AddComponent<ThemeAnimatedBackground>();
+        }
+
         // Initialize Level in GameplayController
         gc.InitializeLevel(levelData);
 

@@ -332,6 +332,21 @@ public partial class BallMergeLevelEditorWindow
                         normal = { textColor = Color.black }
                     });
                 }
+                else if (bType == BlockBehaviorType.PortalEntry || bType == BlockBehaviorType.PortalExit)
+                {
+                    int ch = p.GetEffectiveLockChannel(def);
+                    string pLabel = bType == BlockBehaviorType.PortalEntry ? $"P{ch} IN" : $"P{ch} OUT";
+                    Rect chRect = new Rect(center.x - 22f, center.y - hPx * 0.5f, 44f, 15f);
+                    EditorGUI.DrawRect(chRect, bType == BlockBehaviorType.PortalEntry
+                        ? new Color(0.18f, 0.85f, 1f, 0.92f)
+                        : new Color(0.96f, 0.42f, 0.92f, 0.92f));
+                    GUI.Label(chRect, pLabel, new GUIStyle(EditorStyles.miniBoldLabel)
+                    {
+                        alignment = TextAnchor.MiddleCenter,
+                        fontSize = 9,
+                        normal = { textColor = Color.black }
+                    });
+                }
 
                 if (p.IsDestructible(def))
                 {
@@ -344,7 +359,9 @@ public partial class BallMergeLevelEditorWindow
                 {
                     string staticTag = bType == BlockBehaviorType.MovingPlatform ? "MOVE"
                                      : (bType == BlockBehaviorType.MagnetField ? "MAGNET"
-                                     : (bType == BlockBehaviorType.BumperPad ? "BOUNCE" : "LEDGE"));
+                                     : (bType == BlockBehaviorType.BumperPad ? "BOUNCE"
+                                     : (bType == BlockBehaviorType.PortalEntry ? "IN"
+                                     : (bType == BlockBehaviorType.PortalExit ? "OUT" : "LEDGE"))));
                     Rect tagRect = new Rect(center.x - 26, center.y - 8, 52, 16);
                     GUI.Label(tagRect, staticTag, new GUIStyle(EditorStyles.miniBoldLabel)
                     {
@@ -357,6 +374,44 @@ public partial class BallMergeLevelEditorWindow
         }
 
         DrawKeyLockConnections(localBounds);
+        DrawPortalConnections(localBounds);
+    }
+
+    private void DrawPortalConnections(Rect localBounds)
+    {
+        if (currentLevel.blocks == null) return;
+
+        for (int i = 0; i < currentLevel.blocks.Count; i++)
+        {
+            LevelBlockPlacement entryBlk = currentLevel.blocks[i];
+            if (entryBlk == null) continue;
+            BlockDefinitionSO entryDef = entryBlk.ResolveDefinition(blockLibrary);
+            if (entryDef == null || entryDef.behaviorType != BlockBehaviorType.PortalEntry) continue;
+
+            int entryChan = entryBlk.GetEffectiveLockChannel(entryDef);
+            Vector2 entryPos = WorldToCanvas(entryBlk.position, localBounds);
+
+            for (int j = 0; j < currentLevel.blocks.Count; j++)
+            {
+                LevelBlockPlacement exitBlk = currentLevel.blocks[j];
+                if (exitBlk == null) continue;
+                BlockDefinitionSO exitDef = exitBlk.ResolveDefinition(blockLibrary);
+                if (exitDef == null || exitDef.behaviorType != BlockBehaviorType.PortalExit) continue;
+
+                int exitChan = exitBlk.GetEffectiveLockChannel(exitDef);
+                if (entryChan == 0 || exitChan == 0 || entryChan == exitChan)
+                {
+                    bool highlight = selectedIndices.Contains(i) || selectedIndices.Contains(j);
+                    Handles.color = highlight ? new Color(0.32f, 0.92f, 1f, 0.95f) : new Color(0.32f, 0.92f, 1f, 0.42f);
+                    Vector2 exitPos = WorldToCanvas(exitBlk.position, localBounds);
+                    Handles.DrawDottedLine(new Vector3(entryPos.x, entryPos.y, 0f), new Vector3(exitPos.x, exitPos.y, 0f), 5f);
+
+                    Vector2 dir = (exitPos - entryPos).normalized;
+                    Vector2 arrowPt = exitPos - dir * 16f;
+                    Handles.DrawSolidDisc(arrowPt, Vector3.forward, highlight ? 4.5f : 3f);
+                }
+            }
+        }
     }
 
     private void DrawKeyLockConnections(Rect localBounds)

@@ -10,10 +10,12 @@ using UnityEngine;
 public static class BlockSpriteGenerator
 {
     public const string SPRITES_FOLDER = "Assets/Game/Sprites/Blocks";
+    public const string UI_RESOURCES_FOLDER = "Assets/Resources/BallMerge/UI";
 
     public static void EnsureAllBlockSpritesExist()
     {
         EnsureFolder(SPRITES_FOLDER);
+        EnsureFolder(UI_RESOURCES_FOLDER);
 
         CreateCrateSprite("Block_Crate_Weak.png",
             new Color(0.98f, 0.72f, 0.32f, 1f),
@@ -46,6 +48,10 @@ public static class BlockSpriteGenerator
         CreatePadlockOverlaySprite("Block_Padlock_Overlay.png", 128);
         CreateMagnetCoreSprite("Block_Magnet_Special.png", 128);
         CreateBumperPadSprite("Block_Bumper_Pad.png", 128);
+        CreatePortalSprite("Block_Portal_Entry.png", new Color(0.15f, 0.82f, 1.0f), new Color(0.06f, 0.32f, 0.72f), 128);
+        CreatePortalSprite("Block_Portal_Exit.png", new Color(1.0f, 0.45f, 0.92f), new Color(0.45f, 0.14f, 0.65f), 128);
+        CreateChestSprite($"{UI_RESOURCES_FOLDER}/Chest_Closed.png", isOpen: false, 160);
+        CreateChestSprite($"{UI_RESOURCES_FOLDER}/Chest_Open.png", isOpen: true, 160);
 
         CreateCrackSprite("Crack_Stage1.png", 1, 128);
         CreateCrackSprite("Crack_Stage2.png", 2, 128);
@@ -451,6 +457,102 @@ public static class BlockSpriteGenerator
             }
         }
         SaveAndConfigureSprite(tex, path, size);
+    }
+
+    private static void CreatePortalSprite(string fileName, Color bright, Color deep, int size)
+    {
+        string path = $"{SPRITES_FOLDER}/{fileName}";
+        Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        Vector2 c = new Vector2(size * 0.5f, size * 0.5f);
+        float maxR = size * 0.47f;
+
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                Vector2 rel = new Vector2(x, y) - c;
+                float r = rel.magnitude;
+                if (r > maxR)
+                {
+                    tex.SetPixel(x, y, Color.clear);
+                    continue;
+                }
+
+                float normR = r / maxR;
+                float angle = Mathf.Atan2(rel.y, rel.x);
+                float swirl = 0.5f + 0.5f * Mathf.Sin(angle * 3f + normR * 10f);
+
+                Color col = Color.Lerp(deep, bright, swirl * 0.7f + (normR > 0.72f ? 0.3f : 0f));
+                if (normR < 0.28f)
+                {
+                    col = Color.Lerp(Color.white, bright, normR / 0.28f);
+                }
+                else if (normR > 0.90f)
+                {
+                    col.a = Mathf.Clamp01((1f - normR) / 0.10f);
+                }
+                else
+                {
+                    col.a = 0.94f;
+                }
+
+                tex.SetPixel(x, y, col);
+            }
+        }
+        SaveAndConfigureSprite(tex, path, size);
+    }
+
+    private static void CreateChestSprite(string fullAssetPath, bool isOpen, int size)
+    {
+        Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+
+        Color wood = new Color(0.55f, 0.30f, 0.14f, 1f);
+        Color darkWood = new Color(0.36f, 0.18f, 0.08f, 1f);
+        Color gold = new Color(1.0f, 0.82f, 0.20f, 1f);
+        Color darkGold = new Color(0.75f, 0.52f, 0.08f, 1f);
+        Color glow = new Color(1.0f, 0.96f, 0.58f, 1f);
+
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                Color c = Color.clear;
+
+                // Chest base box (y: 18..76, x: 22..138)
+                bool inBase = x >= 22 && x <= 138 && y >= 18 && y <= 76;
+                // Lid closed (y: 76..118) vs Open (y: 96..138 shifted slightly back)
+                bool inLid = isOpen
+                    ? (x >= 24 && x <= 136 && y >= 98 && y <= 140)
+                    : (x >= 20 && x <= 140 && y >= 76 && y <= 118);
+
+                // Golden treasure glow spilling out of open chest
+                if (isOpen && x >= 30 && x <= 130 && y >= 74 && y < 100)
+                {
+                    float distCenter = Mathf.Abs(x - 80f) / 50f;
+                    c = Color.Lerp(glow, gold, distCenter);
+                }
+
+                if (inBase)
+                {
+                    bool frame = x < 30 || x > 130 || y < 26 || y > 70 || Mathf.Abs(x - 80) < 6;
+                    c = frame ? (y < 26 ? darkGold : gold) : (((y / 12) % 2 == 0) ? wood : darkWood);
+
+                    // Lock plate in center
+                    if (!isOpen && x >= 70 && x <= 90 && y >= 62 && y <= 84)
+                    {
+                        c = (x >= 77 && x <= 83 && y >= 68 && y <= 78) ? darkWood : gold;
+                    }
+                }
+                else if (inLid)
+                {
+                    bool frame = x < 30 || x > 130 || (isOpen ? y > 132 || y < 104 : y > 110) || Mathf.Abs(x - 80) < 6;
+                    c = frame ? gold : wood;
+                }
+
+                tex.SetPixel(x, y, c);
+            }
+        }
+        SaveAndConfigureSprite(tex, fullAssetPath, size);
     }
 
     private static void CreateSolidWhiteSprite(string fileName, int size)

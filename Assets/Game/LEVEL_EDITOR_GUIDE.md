@@ -20,9 +20,13 @@
   - **Key Crate & Locked Vault:** Locked Vaults stay immune until a matching-channel Key Crate is destroyed, launching a flying glowing Key Orb to unlock them.
   - **Magnet Core:** Gently pulls (or repels with negative force) nearby balls inside its field radius for trick-shot merges.
   - **Bounce Bumper:** Pinball-style neon pad that kicks colliding balls across the container.
-- **Audio, Combos & Juice:**
-  - **Procedural Arcade SFX:** Built-in synthesized sound effects (`ProceduralAudioGenerator`) play automatically for drops, combo-pitched merges, hits, breaks, ice cracks, explosions, key unlocks, and win/lose fanfare.
+  - **Teleport Portals (Entry → Exit):** Balls entering a `Portal Entry` smoothly warp out of matching-channel (1–5) `Portal Exit` blocks behind barriers or into hidden pockets, shown with dotted channel links inside the Level Editor.
+- **Audio, Combos, Animated Backgrounds & Rewards:**
+  - **Theme-Aware Animated Background:** `ThemeAnimatedBackground` automatically renders subtle floating stars (`dark_theme`), rising ocean bubbles (`ocean_theme`), drifting clouds (`sky_theme`), or warm embers (`sunset_theme`) synced to `ThemeManager`.
+  - **Procedural Arcade SFX:** Built-in synthesized sound effects (`ProceduralAudioGenerator`) play automatically for drops, combo-pitched merges, hits, breaks, ice cracks, explosions, key unlocks, portal warps, coin ticks, chest fanfare, and win/lose audio.
   - **Combo Streak & Camera Shake:** Rapid merges display **`COMBO x2!` / `MEGA x4!`** banners with rising chime pitches and subtle 2D camera micro-shake (`CameraShake2D`).
+  - **Unused Drops Coin Bonus:** Winning a level awards base completion coins plus **`+20 Coins`** per remaining unused ball drop, displayed with an animated coin roll-up breakdown (`LevelWinPanel` & `BlockTestingController`).
+  - **Milestone Chests (Every 5 Levels):** Completing Level 5, 10, 15, ... opens an interactive Treasure Chest popup (`MilestoneChestModal`) that unlocks a free unowned Ball Kit or Theme (plus bonus coins, or a coin jackpot once all kits/themes are owned).
 - **Win & Loss Rules:**
   - **Win:** Clear all required destructible blocks (`DestroyAllBlocks` win condition).
   - **Lose:** Run out of `Max Drops` (checked after final balls & merges finish settling) or overflow past the `Danger Line`.

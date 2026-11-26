@@ -26,7 +26,9 @@ public enum BlockBehaviorType
     KeyTrigger = 5,
     LockedGate = 6,
     MagnetField = 7,
-    BumperPad = 8
+    BumperPad = 8,
+    PortalEntry = 9,
+    PortalExit = 10
 }
 
 /// <summary>

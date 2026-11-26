@@ -36,6 +36,7 @@ public class GameplayController : Singleton<GameplayController>
     public bool LevelCompleted => levelCompleted;
     public LevelDataSO ActiveLevelData => levelData;
     public LevelBlockManager BlockManager => blockManager;
+    public LevelRewardSummary LastRewardSummary { get; private set; }
 
     protected override void Awake()
     {
@@ -329,11 +330,11 @@ public class GameplayController : Singleton<GameplayController>
 
         Debug.Log($"[GameplayController] Level {levelData.levelNumber} COMPLETED! Score: {currentScore}, Drops Used: {totalDropsUsed}");
 
-        int stars = 1;
+        int targetForStars = Mathf.Max(100, levelData.targetScore);
+        LevelRewardSummary reward;
         if (PlayerDataManager.HasInstance)
         {
-            int targetForStars = Mathf.Max(100, levelData.targetScore);
-            stars = PlayerDataManager.Instance.SaveLevelCompletion(
+            reward = PlayerDataManager.Instance.SaveLevelCompletionWithBreakdown(
                 levelData.levelNumber,
                 currentScore,
                 remainingDrops,
@@ -341,13 +342,30 @@ public class GameplayController : Singleton<GameplayController>
                 targetForStars
             );
         }
+        else
+        {
+            int unused = levelData.maxDrops > 0 ? Mathf.Max(0, remainingDrops) : 0;
+            int baseCoins = 50 + (levelData.levelNumber * 10) + 45;
+            reward = new LevelRewardSummary
+            {
+                levelNumber = levelData.levelNumber,
+                stars = 3,
+                baseLevelCoins = baseCoins,
+                unusedDrops = unused,
+                unusedDropsBonusCoins = unused * 20,
+                totalCoinsEarned = baseCoins + (unused * 20),
+                hasUnclaimedMilestoneChest = levelData.levelNumber > 0 && (levelData.levelNumber % 5) == 0
+            };
+        }
+
+        LastRewardSummary = reward;
 
         if (UIManager.HasInstance)
         {
             LevelWinPanel winPanel = UIManager.Instance.GetPanel<LevelWinPanel>();
             if (winPanel != null)
             {
-                winPanel.SetupLevelWin(levelData.levelNumber, currentScore, totalDropsUsed, stars);
+                winPanel.SetupLevelWin(levelData.levelNumber, currentScore, totalDropsUsed, reward.stars);
                 UIManager.Instance.ShowPanel<LevelWinPanel>(false);
             }
         }

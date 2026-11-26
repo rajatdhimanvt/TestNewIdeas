@@ -82,7 +82,9 @@ public class DestructibleBlock : MonoBehaviour
 
         // Root transform stays uniformly scaled (1,1,1) so HP badge and colliders never distort
         transform.localScale = Vector3.one;
-        boxCollider.size = blockSize;
+        bool isPortal = behaviorType == BlockBehaviorType.PortalEntry || behaviorType == BlockBehaviorType.PortalExit;
+        boxCollider.isTrigger = isPortal;
+        boxCollider.size = isPortal ? blockSize * 0.72f : blockSize;
         boxCollider.offset = Vector2.zero;
 
         SetupPhysicsMaterial(def);
@@ -211,6 +213,12 @@ public class DestructibleBlock : MonoBehaviour
             Color c = magnetAuraRenderer.color;
             c.a = 0.16f + 0.1f * (0.5f + 0.5f * Mathf.Sin(Time.time * 4.5f));
             magnetAuraRenderer.color = c;
+        }
+
+        if ((behaviorType == BlockBehaviorType.PortalEntry || behaviorType == BlockBehaviorType.PortalExit) && visualRoot != null)
+        {
+            float spinSpeed = behaviorType == BlockBehaviorType.PortalEntry ? -150f : 150f;
+            visualRoot.Rotate(0f, 0f, spinSpeed * Time.deltaTime);
         }
     }
 
@@ -631,5 +639,28 @@ public class DestructibleBlock : MonoBehaviour
         {
             TakeDamage(1, collision.GetContact(0).point);
         }
+    }
+
+    private void OnTriggerEnter2D(Collider2D other)
+    {
+        if (isDestroyed || behaviorType != BlockBehaviorType.PortalEntry) return;
+
+        Ball ball = other.GetComponent<Ball>();
+        if (ball != null && ball.CanUsePortal() && LevelBlockManager.HasInstance)
+        {
+            LevelBlockManager.Instance.TryTeleportBall(ball, this);
+        }
+    }
+
+    public void PlayPortalPulse(Color ringColor)
+    {
+        if (visualRoot != null)
+        {
+            visualRoot.DOKill();
+            FitRendererToSize(mainRenderer, blockSize);
+            Vector3 baseScale = visualRoot.localScale;
+            visualRoot.DOPunchScale(baseScale * 0.25f, 0.22f, 6, 0.6f).SetLink(gameObject);
+        }
+        BlockRuntimeVisuals.SpawnShockwaveRing(transform.position, Mathf.Max(blockSize.x, blockSize.y) * 0.9f, ringColor, 0.24f);
     }
 }

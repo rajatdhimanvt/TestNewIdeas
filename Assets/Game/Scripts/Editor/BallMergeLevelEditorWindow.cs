@@ -692,10 +692,14 @@ public partial class BallMergeLevelEditorWindow : EditorWindow
             EditorGUILayout.EndHorizontal();
         }
 
-        if (bType == BlockBehaviorType.KeyTrigger || bType == BlockBehaviorType.LockedGate)
+        if (bType == BlockBehaviorType.KeyTrigger || bType == BlockBehaviorType.LockedGate ||
+            bType == BlockBehaviorType.PortalEntry || bType == BlockBehaviorType.PortalExit)
         {
             int curChan = p.GetEffectiveLockChannel(newDef);
-            int editedChan = EditorGUILayout.IntSlider("Key/Lock Channel", curChan, 1, 5);
+            string chanLabel = (bType == BlockBehaviorType.PortalEntry || bType == BlockBehaviorType.PortalExit)
+                ? "Portal Channel"
+                : "Key/Lock Channel";
+            int editedChan = EditorGUILayout.IntSlider(chanLabel, curChan, 1, 5);
             if (editedChan != curChan) newLockChannel = editedChan;
         }
 

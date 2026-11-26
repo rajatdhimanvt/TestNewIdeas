@@ -30,11 +30,14 @@ public class BlockTestingController : MonoBehaviour
     [SerializeField] private Image blocksProgressFill;
     [SerializeField] private TMP_Text dropsText;
     [SerializeField] private TMP_Text scoreText;
+    [SerializeField] private TMP_Text coinsBalanceText;
     [SerializeField] private TMP_Text nextBallNameText;
     [SerializeField] private Image nextBallImage;
     [SerializeField] private Button prevLevelButton;
     [SerializeField] private Button nextLevelButton;
     [SerializeField] private Button restartButton;
+    [SerializeField] private Button themeCycleButton;
+    [SerializeField] private TMP_Text themeLabelText;
 
     [Header("Result Overlay")]
     [SerializeField] private GameObject resultOverlay;
@@ -42,11 +45,13 @@ public class BlockTestingController : MonoBehaviour
     [SerializeField] private TMP_Text resultTitleText;
     [SerializeField] private TMP_Text resultStarsText;
     [SerializeField] private TMP_Text resultSubtitleText;
+    [SerializeField] private TMP_Text resultCoinBonusText;
     [SerializeField] private Button resultNextButton;
     [SerializeField] private Button resultRetryButton;
 
     private LevelDatabaseSO database;
     private int lastShownScore = -1;
+    private Coroutine delayedChestRoutine;
 
     private void Awake()
     {
@@ -67,6 +72,7 @@ public class BlockTestingController : MonoBehaviour
         GameEvents.OnBallDropped += HandleBallDropped;
         GameEvents.OnLevelCompleted += HandleLevelCompleted;
         GameEvents.OnGameStateChanged += HandleGameStateChanged;
+        PlayerDataManager.OnCoinsChanged += HandleCoinsChanged;
     }
 
     private void OnDisable()
@@ -77,6 +83,8 @@ public class BlockTestingController : MonoBehaviour
         GameEvents.OnBallDropped -= HandleBallDropped;
         GameEvents.OnLevelCompleted -= HandleLevelCompleted;
         GameEvents.OnGameStateChanged -= HandleGameStateChanged;
+        PlayerDataManager.OnCoinsChanged -= HandleCoinsChanged;
+        StopDelayedChest();
     }
 
     private void Start()
@@ -93,8 +101,26 @@ public class BlockTestingController : MonoBehaviour
         HookButton(prevLevelButton, PlayPreviousLevel);
         HookButton(nextLevelButton, PlayNextLevel);
         HookButton(restartButton, LoadAndPlayCurrentLevel);
+        HookButton(themeCycleButton, CycleThemePreview);
         HookButton(resultNextButton, PlayNextLevel);
         HookButton(resultRetryButton, LoadAndPlayCurrentLevel);
+    }
+
+    private void CycleThemePreview()
+    {
+        if (ThemeManager.HasInstance)
+        {
+            ThemeDataSO t = ThemeManager.Instance.CyclePreviewTheme();
+            RefreshThemeLabel(t);
+        }
+    }
+
+    private void RefreshThemeLabel(ThemeDataSO t)
+    {
+        if (themeLabelText != null)
+        {
+            themeLabelText.text = t != null ? t.themeName : "Theme";
+        }
     }
 
     private static void HookButton(Button btn, UnityEngine.Events.UnityAction action)
@@ -168,6 +194,7 @@ public class BlockTestingController : MonoBehaviour
 
     public void LoadAndPlayCurrentLevel()
     {
+        StopDelayedChest();
         if (resultOverlay != null) resultOverlay.SetActive(false);
 
         if (startLevel == null)
@@ -212,6 +239,16 @@ public class BlockTestingController : MonoBehaviour
             levelTitleText.text = $"LVL {startLevel.levelNumber}: {title}";
         }
 
+        if (ThemeManager.HasInstance)
+        {
+            RefreshThemeLabel(ThemeManager.Instance.CurrentEquippedTheme);
+        }
+
+        if (PlayerDataManager.HasInstance)
+        {
+            HandleCoinsChanged(PlayerDataManager.Instance.Coins);
+        }
+
         lastShownScore = 0;
         HandleScoreChanged(0);
         if (gameplayController != null)
@@ -221,6 +258,14 @@ public class BlockTestingController : MonoBehaviour
         if (blockManager != null)
         {
             HandleBlocksChanged(blockManager.RemainingRequiredBlocks, blockManager.TotalRequiredBlocks);
+        }
+    }
+
+    private void HandleCoinsChanged(int newBalance)
+    {
+        if (coinsBalanceText != null)
+        {
+            coinsBalanceText.text = $"COINS: {newBalance:N0}";
         }
     }
 
@@ -406,9 +451,62 @@ public class BlockTestingController : MonoBehaviour
         {
             resultSubtitleText.text = subtitle;
         }
+
+        if (resultCoinBonusText != null)
+        {
+            if (isWin && gameplayController != null)
+            {
+                LevelRewardSummary reward = gameplayController.LastRewardSummary;
+                resultCoinBonusText.gameObject.SetActive(true);
+                string detail = reward.unusedDrops > 0
+                    ? $"Base +{reward.baseLevelCoins}  |  {reward.unusedDrops} Unused Drops × 20 = +{reward.unusedDropsBonusCoins}"
+                    : "Level Reward";
+
+                int shown = 0;
+                int lastTick = -1;
+                resultCoinBonusText.text = $"{detail}\n+0 COINS";
+                DOTween.To(() => shown, v =>
+                {
+                    shown = v;
+                    resultCoinBonusText.text = $"{detail}\n+{shown:N0} COINS EARNED!";
+                    int step = shown / 25;
+                    if (step > lastTick)
+                    {
+                        lastTick = step;
+                        GameEvents.OnPlaySFX?.Invoke("CoinTick");
+                    }
+                }, reward.totalCoinsEarned, 0.75f).SetDelay(0.18f).SetEase(Ease.OutCubic).SetUpdate(true).SetLink(resultCoinBonusText.gameObject);
+
+                if (reward.hasUnclaimedMilestoneChest)
+                {
+                    delayedChestRoutine = StartCoroutine(ShowMilestoneChestAfterDelay(reward.levelNumber));
+                }
+            }
+            else
+            {
+                resultCoinBonusText.gameObject.SetActive(false);
+            }
+        }
+
         if (resultNextButton != null)
         {
             resultNextButton.gameObject.SetActive(isWin && database != null && database.TotalLevels > 1);
+        }
+    }
+
+    private IEnumerator ShowMilestoneChestAfterDelay(int levelNum)
+    {
+        yield return new WaitForSecondsRealtime(0.9f);
+        delayedChestRoutine = null;
+        MilestoneChestModal.Show(transform, levelNum);
+    }
+
+    private void StopDelayedChest()
+    {
+        if (delayedChestRoutine != null)
+        {
+            StopCoroutine(delayedChestRoutine);
+            delayedChestRoutine = null;
         }
     }
 }

@@ -64,6 +64,15 @@ public static class ProceduralAudioGenerator
             case "BonusDrop":
                 return BuildArpeggio("SFX_BonusDrop", new[] { 880f, 1174.66f }, 0.10f, 0.28f);
 
+            case "Teleport":
+                return BuildToneSweep("SFX_Teleport", 0.22f, 320f, 1380f, 0.28f, addNoise: false);
+
+            case "CoinTick":
+                return BuildDualTone("SFX_CoinTick", 0.055f, 1318.5f, 1975.5f, 0.18f);
+
+            case "ChestOpen":
+                return BuildArpeggio("SFX_ChestOpen", new[] { 523.25f, 659.25f, 783.99f, 1046.50f, 1318.51f }, 0.11f, 0.34f);
+
             case "LevelWin":
                 return BuildArpeggio("SFX_LevelWin", new[] { 523.25f, 659.25f, 783.99f, 1046.50f }, 0.14f, 0.32f);
 

@@ -157,4 +157,15 @@ public class ThemeManager : Singleton<ThemeManager>
             mainCam.backgroundColor = currentEquippedTheme.backgroundColor;
         }
     }
+
+    public ThemeDataSO CyclePreviewTheme()
+    {
+        if (availableThemes == null || availableThemes.Count == 0) return currentEquippedTheme;
+        int idx = availableThemes.IndexOf(currentEquippedTheme);
+        int nextIdx = (idx + 1) % availableThemes.Count;
+        currentEquippedTheme = availableThemes[nextIdx];
+        ApplyCurrentTheme();
+        OnThemeChanged?.Invoke(currentEquippedTheme);
+        return currentEquippedTheme;
+    }
 }

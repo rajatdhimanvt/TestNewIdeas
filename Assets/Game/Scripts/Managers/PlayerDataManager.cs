@@ -1,10 +1,32 @@
 using System;
 using UnityEngine;
 
+public struct LevelRewardSummary
+{
+    public int levelNumber;
+    public int stars;
+    public int baseLevelCoins;
+    public int unusedDrops;
+    public int unusedDropsBonusCoins;
+    public int totalCoinsEarned;
+    public bool hasUnclaimedMilestoneChest;
+}
+
+public class MilestoneChestReward
+{
+    public int levelNumber;
+    public string rewardTitle;
+    public string rewardSubtitle;
+    public int bonusCoins;
+    public BallKitSO unlockedKit;
+    public ThemeDataSO unlockedTheme;
+}
+
 /// <summary>
 /// Central Manager handling player data persistence:
 /// - In-game Coins balance & transactions
 /// - Campaign Level progression & 3-Star ratings per level
+/// - Milestone Chests every 5 levels
 /// - Ball Kit & Theme ownership / unlock state
 /// - Daily Reward streak & Spin Wheel timer persistence
 /// </summary>
@@ -16,6 +38,7 @@ public class PlayerDataManager : Singleton<PlayerDataManager>
     private const string PREF_SCORE_PREFIX = "Level_Score_";
     private const string PREF_KIT_OWNED_PREFIX = "Kit_Owned_";
     private const string PREF_THEME_OWNED_PREFIX = "Theme_Owned_";
+    private const string PREF_MILESTONE_CLAIMED_PREFIX = "Milestone_Chest_Claimed_";
     private const string PREF_DAILY_STREAK = "Daily_Streak_Count";
     private const string PREF_LAST_CLAIM_DATE = "Last_Claim_Date";
     private const string PREF_LAST_SPIN_DATE = "Last_Spin_Date";
@@ -96,14 +119,29 @@ public class PlayerDataManager : Singleton<PlayerDataManager>
         return levelNum == 1 || levelNum <= HighestUnlockedLevel;
     }
 
+    public bool IsMilestoneLevel(int levelNum)
+    {
+        return levelNum > 0 && (levelNum % 5) == 0;
+    }
+
+    public bool IsMilestoneChestClaimed(int levelNum)
+    {
+        return PlayerPrefs.GetInt(PREF_MILESTONE_CLAIMED_PREFIX + levelNum, 0) == 1;
+    }
+
     /// <summary>
     /// Evaluates performance and saves level completion results (Stars, Unlocks, Coins).
     /// Returns calculated star rating (1, 2, or 3).
     /// </summary>
     public int SaveLevelCompletion(int levelNum, int scoreAchieved, int dropsRemaining, int maxDrops, int targetScore)
     {
+        return SaveLevelCompletionWithBreakdown(levelNum, scoreAchieved, dropsRemaining, maxDrops, targetScore).stars;
+    }
+
+    public LevelRewardSummary SaveLevelCompletionWithBreakdown(int levelNum, int scoreAchieved, int dropsRemaining, int maxDrops, int targetScore)
+    {
         // 1. Calculate Stars
-        int stars = 1; // Passed target score
+        int stars = 1;
         float dropsRatio = maxDrops > 0 ? (float)dropsRemaining / maxDrops : 1f;
 
         if (scoreAchieved >= targetScore * 1.4f || dropsRatio >= 0.5f)
@@ -138,12 +176,105 @@ public class PlayerDataManager : Singleton<PlayerDataManager>
             PlayerPrefs.SetInt(PREF_UNLOCKED_LEVEL, HighestUnlockedLevel);
         }
 
-        // Reward Coins: Base 50 + Level bonus
-        int bonusCoins = 50 + (levelNum * 15) + (stars * 20);
-        AddCoins(bonusCoins);
+        // Reward Coins: Base + Unused Drops Bonus (+20 Coins per unused drop)
+        int baseCoins = 50 + (levelNum * 10) + (stars * 15);
+        int unusedDrops = maxDrops > 0 ? Mathf.Max(0, dropsRemaining) : 0;
+        int unusedBonus = unusedDrops * 20;
+        int totalEarned = baseCoins + unusedBonus;
+        AddCoins(totalEarned);
 
         PlayerPrefs.Save();
-        return stars;
+
+        return new LevelRewardSummary
+        {
+            levelNumber = levelNum,
+            stars = stars,
+            baseLevelCoins = baseCoins,
+            unusedDrops = unusedDrops,
+            unusedDropsBonusCoins = unusedBonus,
+            totalCoinsEarned = totalEarned,
+            hasUnclaimedMilestoneChest = IsMilestoneLevel(levelNum) && !IsMilestoneChestClaimed(levelNum)
+        };
+    }
+
+    public MilestoneChestReward ClaimMilestoneChest(int levelNum)
+    {
+        PlayerPrefs.SetInt(PREF_MILESTONE_CLAIMED_PREFIX + levelNum, 1);
+
+        BallKitSO freeKit = null;
+        ThemeDataSO freeTheme = null;
+
+        bool preferKitFirst = ((levelNum / 5) % 2) == 1;
+        if (preferKitFirst)
+        {
+            freeKit = FindFirstUnownedKit();
+            if (freeKit == null) freeTheme = FindFirstUnownedTheme();
+        }
+        else
+        {
+            freeTheme = FindFirstUnownedTheme();
+            if (freeTheme == null) freeKit = FindFirstUnownedKit();
+        }
+
+        var reward = new MilestoneChestReward
+        {
+            levelNumber = levelNum,
+            unlockedKit = freeKit,
+            unlockedTheme = freeTheme
+        };
+
+        if (freeKit != null)
+        {
+            SetKitOwned(freeKit.kitId, true);
+            reward.bonusCoins = 200 + (levelNum * 15);
+            reward.rewardTitle = $"UNLOCKED KIT: {freeKit.kitName.ToUpper()}!";
+            reward.rewardSubtitle = $"Plus +{reward.bonusCoins} Bonus Coins!";
+        }
+        else if (freeTheme != null)
+        {
+            SetThemeOwned(freeTheme.themeId, true);
+            reward.bonusCoins = 200 + (levelNum * 15);
+            reward.rewardTitle = $"UNLOCKED THEME: {freeTheme.themeName.ToUpper()}!";
+            reward.rewardSubtitle = $"Plus +{reward.bonusCoins} Bonus Coins!";
+        }
+        else
+        {
+            reward.bonusCoins = 500 + (levelNum * 25);
+            reward.rewardTitle = "MEGA COIN JACKPOT!";
+            reward.rewardSubtitle = $"All Kits & Themes owned — +{reward.bonusCoins} Coins!";
+        }
+
+        AddCoins(reward.bonusCoins);
+        PlayerPrefs.Save();
+        return reward;
+    }
+
+    private BallKitSO FindFirstUnownedKit()
+    {
+        if (!BallKitManager.HasInstance || BallKitManager.Instance.AvailableKits == null) return null;
+        var kits = BallKitManager.Instance.AvailableKits;
+        for (int i = 0; i < kits.Count; i++)
+        {
+            if (kits[i] != null && !IsKitOwned(kits[i].kitId))
+            {
+                return kits[i];
+            }
+        }
+        return null;
+    }
+
+    private ThemeDataSO FindFirstUnownedTheme()
+    {
+        if (!ThemeManager.HasInstance || ThemeManager.Instance.AvailableThemes == null) return null;
+        var themes = ThemeManager.Instance.AvailableThemes;
+        for (int i = 0; i < themes.Count; i++)
+        {
+            if (themes[i] != null && !IsThemeOwned(themes[i].themeId))
+            {
+                return themes[i];
+            }
+        }
+        return null;
     }
 
     public int GetTotalStarsEarned(int totalLevels = 50)

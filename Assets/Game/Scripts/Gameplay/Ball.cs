@@ -15,6 +15,7 @@ public class Ball : MonoBehaviour
     private CircleCollider2D circleCollider;
     private Rigidbody2D rb;
     private SpriteRenderer spriteRenderer;
+    private float portalCooldownUntil = -10f;
 
     private static Sprite defaultCircleSprite;
 
@@ -22,6 +23,13 @@ public class Ball : MonoBehaviour
     public bool IsDropped => isDropped;
     public bool IsMerging => isMerging;
     public Rigidbody2D Rigidbody => rb;
+
+    public bool CanUsePortal() => isDropped && !isMerging && Time.time >= portalCooldownUntil;
+
+    public void NotifyTeleported(float cooldownSeconds = 0.45f)
+    {
+        portalCooldownUntil = Time.time + cooldownSeconds;
+    }
 
     private void Awake()
     {
