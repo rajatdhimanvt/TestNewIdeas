@@ -29,8 +29,13 @@ public class AudioManager : Singleton<AudioManager>
     [SerializeField] private List<SoundEffect> soundEffects = new List<SoundEffect>();
     [SerializeField] private List<SoundEffect> musicTracks = new List<SoundEffect>();
 
+    [Header("Procedural Fallback")]
+    [SerializeField] private bool enableProceduralFallbackSFX = true;
+
     private readonly Dictionary<string, SoundEffect> sfxDict = new Dictionary<string, SoundEffect>();
     private readonly Dictionary<string, SoundEffect> musicDict = new Dictionary<string, SoundEffect>();
+    private readonly List<AudioSource> pitchedChannels = new List<AudioSource>();
+    private int nextChannelIndex = 0;
 
     public float MasterVolume { get; private set; } = 1f;
     public float MusicVolume { get; private set; } = 1f;
@@ -48,12 +53,14 @@ public class AudioManager : Singleton<AudioManager>
     private void OnEnable()
     {
         GameEvents.OnPlaySFX += PlaySFX;
+        GameEvents.OnPlaySFXPitched += PlaySFXWithPitch;
         GameEvents.OnPlayMusic += PlayMusic;
     }
 
     private void OnDisable()
     {
         GameEvents.OnPlaySFX -= PlaySFX;
+        GameEvents.OnPlaySFXPitched -= PlaySFXWithPitch;
         GameEvents.OnPlayMusic -= PlayMusic;
     }
 
@@ -84,6 +91,19 @@ public class AudioManager : Singleton<AudioManager>
             sfxSource = sfxObj.AddComponent<AudioSource>();
             sfxSource.loop = false;
             sfxSource.playOnAwake = false;
+        }
+
+        if (pitchedChannels.Count == 0)
+        {
+            for (int i = 0; i < 4; i++)
+            {
+                GameObject chObj = new GameObject($"PitchedSFX_{i}");
+                chObj.transform.SetParent(transform);
+                AudioSource src = chObj.AddComponent<AudioSource>();
+                src.loop = false;
+                src.playOnAwake = false;
+                pitchedChannels.Add(src);
+            }
         }
     }
 
@@ -136,24 +156,51 @@ public class AudioManager : Singleton<AudioManager>
     #region Playback Methods
 
     /// <summary>
-    /// Plays an SFX by registered name. Safe if not found.
+    /// Plays an SFX by registered name, falling back to procedural arcade audio if unassigned.
     /// </summary>
     public void PlaySFX(string soundName)
     {
+        PlaySFXWithPitch(soundName, 1f);
+    }
+
+    /// <summary>
+    /// Plays an SFX with an explicit pitch multiplier (e.g. rising combo chimes).
+    /// </summary>
+    public void PlaySFXWithPitch(string soundName, float pitchMultiplier)
+    {
         if (IsMuted || string.IsNullOrEmpty(soundName)) return;
 
-        if (sfxDict.TryGetValue(soundName, out SoundEffect sfx))
+        AudioClip clipToPlay = null;
+        float volume = SFXVolume * MasterVolume;
+        float pitch = Mathf.Clamp(pitchMultiplier, 0.4f, 2.5f);
+
+        if (sfxDict.TryGetValue(soundName, out SoundEffect sfx) && sfx.clip != null)
         {
-            if (sfx.clip != null)
-            {
-                sfxSource.pitch = sfx.pitch;
-                sfxSource.PlayOneShot(sfx.clip, sfx.volume * SFXVolume * MasterVolume);
-            }
+            clipToPlay = sfx.clip;
+            volume *= sfx.volume;
+            pitch *= sfx.pitch;
         }
-        else
+        else if (enableProceduralFallbackSFX)
         {
-            // Helpful debug log instead of exception
-            Debug.Log($"[AudioManager] SFX '{soundName}' requested (clip not registered in Inspector).");
+            clipToPlay = ProceduralAudioGenerator.GetOrCreateClip(soundName);
+        }
+
+        if (clipToPlay == null) return;
+
+        if (Mathf.Approximately(pitch, 1f) && sfxSource != null)
+        {
+            sfxSource.pitch = 1f;
+            sfxSource.PlayOneShot(clipToPlay, volume);
+        }
+        else if (pitchedChannels.Count > 0)
+        {
+            AudioSource ch = pitchedChannels[nextChannelIndex];
+            nextChannelIndex = (nextChannelIndex + 1) % pitchedChannels.Count;
+            if (ch != null)
+            {
+                ch.pitch = pitch;
+                ch.PlayOneShot(clipToPlay, volume);
+            }
         }
     }
 

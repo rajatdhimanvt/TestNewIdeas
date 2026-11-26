@@ -1,0 +1,54 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3ce4585153fb238428c4d78df1f2bf6d, type: 3}
+  m_Name: BlockDef_crate_weak
+  m_EditorClassIdentifier: 
+  blockId: crate_weak
+  displayName: Weak Crate
+  category: 0
+  description: Light wooden crate. Breaks in 1 nearby merge.
+  isDestructible: 1
+  requiredToClear: 1
+  defaultHP: 1
+  damageOnNearbyMerge: 1
+  damageOnBallCollision: 0
+  extraMergeHitRadius: 0
+  behaviorType: 0
+  scoreReward: 30
+  bonusDropsOnDestroy: 0
+  explodeOnDestroy: 0
+  explosionRadius: 1.9
+  explosionDamage: 2
+  defaultMoveOffset: {x: 1.8, y: 0}
+  defaultMoveSpeed: 1.4
+  defaultLockChannel: 1
+  lockOverlaySprite: {fileID: 0}
+  magnetRadius: 2.4
+  magnetForce: 8.5
+  bumperImpulse: 7.5
+  defaultSize: {x: 0.82, y: 0.82}
+  defaultRotation: 0
+  bounciness: 0.25
+  friction: 0.38
+  baseSprite: {fileID: 21300000, guid: 0af657e852841594bac551c111dbccac, type: 3}
+  crackSprites:
+  - {fileID: 21300000, guid: a2acf479129efc64b92d05c11c3afa17, type: 3}
+  - {fileID: 21300000, guid: e4725567822497944b81c77836d88b5c, type: 3}
+  - {fileID: 21300000, guid: 79412d2b96c06704db53ae0a1c307197, type: 3}
+  baseColor: {r: 1, g: 1, b: 1, a: 1}
+  accentColor: {r: 0.98, g: 0.72, b: 0.32, a: 1}
+  hitParticleColor: {r: 0.95, g: 0.65, b: 0.25, a: 1}
+  destroyParticleColor: {r: 0.95, g: 0.65, b: 0.25, a: 1}
+  showHPBadge: 1
+  hitSoundKey: BlockHit
+  destroySoundKey: BlockBreak
+  customPrefab: {fileID: 0}

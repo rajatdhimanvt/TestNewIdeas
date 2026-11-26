@@ -1,3 +1,4 @@
+using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -53,6 +54,14 @@ public class GameOverPanel : UIBasePanel
                     titleText.text = "GAME OVER";
                 }
             }
+        }
+
+        Transform windowBox = transform.Find("WindowBox");
+        if (windowBox != null)
+        {
+            windowBox.DOKill();
+            windowBox.localScale = Vector3.one * 0.72f;
+            windowBox.DOScale(1f, 0.34f).SetEase(Ease.OutBack).SetUpdate(true).SetLink(gameObject);
         }
     }
 

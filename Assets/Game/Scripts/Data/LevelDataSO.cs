@@ -2,7 +2,18 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// ScriptableObject defining level configuration, tier progressions, dropper pool, and container bounds.
+/// Defines how a Level Mode stage is completed.
+/// </summary>
+public enum LevelWinCondition
+{
+    TargetScore = 0,
+    DestroyAllBlocks = 1,
+    BlocksAndScore = 2
+}
+
+/// <summary>
+/// ScriptableObject defining level configuration, tier progressions, dropper pool,
+/// container bounds, and placed destructible blocks/obstacles.
 /// </summary>
 [CreateAssetMenu(fileName = "LevelData_", menuName = "BallMerge/Level Data")]
 public class LevelDataSO : ScriptableObject
@@ -14,7 +25,10 @@ public class LevelDataSO : ScriptableObject
     [Tooltip("Level number for campaign progression (Level mode)")]
     public int levelNumber = 1;
 
-    [Tooltip("Target score required to complete the level (Level mode)")]
+    [Tooltip("How this level is won (Destroy All Blocks, Target Score, or Both)")]
+    public LevelWinCondition winCondition = LevelWinCondition.TargetScore;
+
+    [Tooltip("Target score required to complete the level (when winCondition uses score)")]
     public int targetScore = 500;
 
     [Tooltip("Maximum allowed ball drops (Level mode). Set to 0 for unlimited.")]
@@ -63,6 +77,41 @@ public class LevelDataSO : ScriptableObject
     [Tooltip("Time in seconds a ball can stay above danger line before Game Over triggers")]
     [Range(1f, 10f)]
     public float dangerTimeLimit = 3.0f;
+
+    [Header("Block Obstacles & Merge Destruction")]
+    [Tooltip("Minimum radius around a merge midpoint that damages nearby blocks")]
+    [Range(0.4f, 3.5f)]
+    public float mergeBlastRadius = 1.15f;
+
+    [Tooltip("Base HP damage dealt to each block hit by a nearby merge")]
+    [Min(1)]
+    public int mergeBaseDamage = 1;
+
+    [Tooltip("If true, higher-tier ball merges deal extra damage (1 + tier/2)")]
+    public bool scaleDamageWithTier = false;
+
+    [Tooltip("Blocks and static ledges placed in this level")]
+    public List<LevelBlockPlacement> blocks = new List<LevelBlockPlacement>();
+
+    public bool HasBlocks => blocks != null && blocks.Count > 0;
+
+    /// <summary>
+    /// Counts how many blocks in this level are required to be destroyed for completion.
+    /// </summary>
+    public int GetRequiredBlockCount(BlockLibrarySO library = null)
+    {
+        if (blocks == null) return 0;
+
+        int count = 0;
+        for (int i = 0; i < blocks.Count; i++)
+        {
+            if (blocks[i] != null && blocks[i].IsRequiredToClear(blocks[i].ResolveDefinition(library)))
+            {
+                count++;
+            }
+        }
+        return count;
+    }
 
     /// <summary>
     /// Returns the active kit (Equipped kit from BallKitManager or defaultKit).

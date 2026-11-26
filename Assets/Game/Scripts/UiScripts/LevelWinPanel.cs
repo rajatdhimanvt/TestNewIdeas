@@ -1,3 +1,4 @@
+using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -70,11 +71,31 @@ public class LevelWinPanel : UIBasePanel
             if (scoreText != null) scoreText.text = $"FINAL SCORE: {gc.CurrentScore}";
             if (dropsUsedText != null) dropsUsedText.text = $"DROPS USED: {gc.TotalDropsUsed}";
         }
+
+        Transform windowBox = transform.Find("WindowBox");
+        if (windowBox != null)
+        {
+            windowBox.DOKill();
+            windowBox.localScale = Vector3.one * 0.72f;
+            windowBox.DOScale(1f, 0.34f).SetEase(Ease.OutBack).SetUpdate(true).SetLink(gameObject);
+        }
+
+        if (starsText != null)
+        {
+            starsText.transform.DOKill();
+            starsText.transform.localScale = Vector3.zero;
+            starsText.transform.DOScale(1f, 0.38f).SetDelay(0.14f).SetEase(Ease.OutBack).SetUpdate(true).SetLink(gameObject);
+        }
     }
 
     private void OnNextLevelClicked()
     {
         Debug.Log("[LevelWinPanel] Next level clicked.");
+        if (GameplayController.HasInstance)
+        {
+            GameplayController.Instance.StartLevelMode(currentLevelNumber + 1);
+        }
+
         if (uiManager != null)
         {
             uiManager.ShowPanel<GameplayHUDPanel>();
@@ -82,7 +103,7 @@ public class LevelWinPanel : UIBasePanel
 
         if (GameManager.HasInstance)
         {
-            GameManager.Instance.StartGame();
+            GameManager.Instance.RestartGame();
         }
     }
 

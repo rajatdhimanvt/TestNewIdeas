@@ -11,6 +11,10 @@ public class BallDropper : MonoBehaviour
     [SerializeField] private LevelDataSO levelData;
     [SerializeField] private Camera mainCamera;
 
+    [Header("Aim Guide Line")]
+    [SerializeField] private bool showAimGuide = true;
+    [SerializeField] private float aimGuideWidth = 0.045f;
+
     [Header("Dropper State")]
     [SerializeField] private Ball currentBall;
     [SerializeField] private BallDataSO nextBallData;
@@ -21,6 +25,8 @@ public class BallDropper : MonoBehaviour
     private float minX = -2f;
     private float maxX = 2f;
     private float currentAimX = 0f;
+    private LineRenderer aimLineRenderer;
+    private Coroutine cooldownCoroutine;
 
     public Ball CurrentBall => currentBall;
     public BallDataSO NextBallData => nextBallData;
@@ -32,20 +38,42 @@ public class BallDropper : MonoBehaviour
         {
             mainCamera = Camera.main;
         }
+        EnsureAimLine();
     }
 
     private void Start()
     {
-        UpdateBoundaries();
-        PrepareInitialBalls();
+        if (levelData != null && currentBall == null)
+        {
+            UpdateBoundaries();
+            PrepareInitialBalls();
+        }
     }
 
     public void Setup(LevelDataSO data)
     {
+        if (cooldownCoroutine != null)
+        {
+            StopCoroutine(cooldownCoroutine);
+            cooldownCoroutine = null;
+        }
+
+        ClearHeldBall();
         levelData = data;
         ignoreInputTimer = 0.25f;
         UpdateBoundaries();
         PrepareInitialBalls();
+    }
+
+    public void ClearHeldBall()
+    {
+        if (currentBall != null)
+        {
+            Destroy(currentBall.gameObject);
+            currentBall = null;
+        }
+        canDrop = false;
+        UpdateAimGuide();
     }
 
     private void UpdateBoundaries()
@@ -72,6 +100,19 @@ public class BallDropper : MonoBehaviour
     private void SpawnNextBallToDropper()
     {
         if (levelData == null || !BallMergeManager.HasInstance) return;
+        if (!isInputActive) return;
+
+        if (GameplayController.HasInstance)
+        {
+            var gc = GameplayController.Instance;
+            if (gc.LevelCompleted) return;
+            if (levelData.gameMode == GameMode.Level && levelData.maxDrops > 0 && gc.RemainingDrops <= 0)
+            {
+                canDrop = false;
+                UpdateAimGuide();
+                return;
+            }
+        }
 
         BallDataSO dataToSpawn = nextBallData ?? levelData.GetRandomDroppableTier();
         nextBallData = levelData.GetRandomDroppableTier();
@@ -81,12 +122,21 @@ public class BallDropper : MonoBehaviour
         currentBall.HoldInDropper(spawnPos);
 
         canDrop = true;
+        UpdateAimGuide();
     }
 
     private void Update()
     {
-        if (!isInputActive || levelData == null) return;
-        if (GameManager.HasInstance && GameManager.Instance.CurrentState != GameState.InGame) return;
+        if (!isInputActive || levelData == null)
+        {
+            if (aimLineRenderer != null && aimLineRenderer.enabled) aimLineRenderer.enabled = false;
+            return;
+        }
+        if (GameManager.HasInstance && GameManager.Instance.CurrentState != GameState.InGame)
+        {
+            if (aimLineRenderer != null && aimLineRenderer.enabled) aimLineRenderer.enabled = false;
+            return;
+        }
 
         if (ignoreInputTimer > 0f)
         {
@@ -101,12 +151,18 @@ public class BallDropper : MonoBehaviour
 
     private void HandleAimingInput()
     {
+        if (mainCamera == null) mainCamera = Camera.main;
         if (mainCamera == null) return;
 
         Vector3 pointerScreenPos = Input.mousePosition;
         Vector3 worldPoint = mainCamera.ScreenToWorldPoint(pointerScreenPos);
 
-        currentAimX = Mathf.Clamp(worldPoint.x, minX, maxX);
+        float ballRadius = currentBall != null && currentBall.Data != null ? currentBall.Data.radius : 0.4f;
+        float halfWidth = levelData.containerWidth * 0.5f;
+        float clampedMin = -halfWidth + ballRadius + 0.04f;
+        float clampedMax = halfWidth - ballRadius - 0.04f;
+
+        currentAimX = Mathf.Clamp(worldPoint.x, clampedMin, clampedMax);
         transform.position = new Vector3(currentAimX, levelData.dropHeight, 0f);
 
         // Keep held ball aligned with dropper position
@@ -114,6 +170,8 @@ public class BallDropper : MonoBehaviour
         {
             currentBall.transform.position = transform.position;
         }
+
+        UpdateAimGuide();
     }
 
     private void HandleDropInput()
@@ -142,17 +200,22 @@ public class BallDropper : MonoBehaviour
         canDrop = false;
         currentBall.Drop();
         currentBall = null;
+        UpdateAimGuide();
 
         GameEvents.OnPlaySFX?.Invoke("Drop");
         GameEvents.OnBallDropped?.Invoke();
 
-        StartCoroutine(DropCooldownRoutine());
+        if (gameObject.activeInHierarchy)
+        {
+            cooldownCoroutine = StartCoroutine(DropCooldownRoutine());
+        }
     }
 
     private IEnumerator DropCooldownRoutine()
     {
         float cooldown = levelData != null ? levelData.dropCooldown : 0.5f;
         yield return new WaitForSeconds(cooldown);
+        cooldownCoroutine = null;
 
         SpawnNextBallToDropper();
     }
@@ -164,5 +227,58 @@ public class BallDropper : MonoBehaviour
         {
             ignoreInputTimer = 0.25f;
         }
+        UpdateAimGuide();
+    }
+
+    private void EnsureAimLine()
+    {
+        if (aimLineRenderer != null) return;
+        aimLineRenderer = GetComponent<LineRenderer>();
+        if (aimLineRenderer == null)
+        {
+            aimLineRenderer = gameObject.AddComponent<LineRenderer>();
+        }
+
+        aimLineRenderer.useWorldSpace = true;
+        aimLineRenderer.positionCount = 2;
+        aimLineRenderer.startWidth = aimGuideWidth;
+        aimLineRenderer.endWidth = aimGuideWidth * 0.5f;
+        aimLineRenderer.sortingOrder = -2;
+        Shader spriteShader = Shader.Find("Sprites/Default");
+        if (spriteShader != null)
+        {
+            aimLineRenderer.sharedMaterial = new Material(spriteShader);
+        }
+    }
+
+    private void UpdateAimGuide()
+    {
+        if (aimLineRenderer == null) EnsureAimLine();
+        if (aimLineRenderer == null) return;
+
+        if (!showAimGuide || !isInputActive || currentBall == null || currentBall.IsDropped || levelData == null)
+        {
+            aimLineRenderer.enabled = false;
+            return;
+        }
+
+        float ballRadius = currentBall.Data != null ? currentBall.Data.radius : 0.35f;
+        Vector2 startPoint = new Vector2(currentAimX, levelData.dropHeight - ballRadius - 0.05f);
+        float fallbackBottomY = -4f;
+        float endY = fallbackBottomY;
+
+        RaycastHit2D hit = Physics2D.CircleCast(startPoint, ballRadius * 0.9f, Vector2.down, 14f);
+        if (hit.collider != null && !hit.collider.isTrigger)
+        {
+            endY = hit.point.y;
+        }
+
+        aimLineRenderer.enabled = true;
+        aimLineRenderer.SetPosition(0, new Vector3(currentAimX, startPoint.y, 0.1f));
+        aimLineRenderer.SetPosition(1, new Vector3(currentAimX, endY, 0.1f));
+
+        Color c = currentBall.Data != null ? currentBall.Data.ballColor : Color.white;
+        aimLineRenderer.startColor = new Color(c.r, c.g, c.b, 0.45f);
+        aimLineRenderer.endColor = new Color(c.r, c.g, c.b, 0.05f);
     }
 }

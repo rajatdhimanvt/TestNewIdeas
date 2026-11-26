@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3ce4585153fb238428c4d78df1f2bf6d, type: 3}
+  m_Name: BlockDef_bumper_pad
+  m_EditorClassIdentifier: 
+  blockId: bumper_pad
+  displayName: Bounce Bumper
+  category: 3
+  description: Pinball-style spring pad that launches hitting balls dynamically across
+    the container!
+  isDestructible: 0
+  requiredToClear: 0
+  defaultHP: 1
+  damageOnNearbyMerge: 0
+  damageOnBallCollision: 0
+  extraMergeHitRadius: 0
+  behaviorType: 8
+  scoreReward: 0
+  bonusDropsOnDestroy: 0
+  explodeOnDestroy: 0
+  explosionRadius: 1.9
+  explosionDamage: 2
+  defaultMoveOffset: {x: 1.8, y: 0}
+  defaultMoveSpeed: 1.4
+  defaultLockChannel: 1
+  lockOverlaySprite: {fileID: 0}
+  magnetRadius: 2.4
+  magnetForce: 8.5
+  bumperImpulse: 7.5
+  defaultSize: {x: 0.78, y: 0.78}
+  defaultRotation: 0
+  bounciness: 0.95
+  friction: 0.05
+  baseSprite: {fileID: 21300000, guid: cddb81e447185814a97e3c2863b81937, type: 3}
+  crackSprites: []
+  baseColor: {r: 1, g: 1, b: 1, a: 1}
+  accentColor: {r: 0.95, g: 0.28, b: 0.82, a: 1}
+  hitParticleColor: {r: 1, g: 0.45, b: 0.95, a: 1}
+  destroyParticleColor: {r: 1, g: 0.45, b: 0.95, a: 1}
+  showHPBadge: 0
+  hitSoundKey: BlockHit
+  destroySoundKey: BlockBreak
+  customPrefab: {fileID: 0}

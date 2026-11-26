@@ -229,8 +229,10 @@ public static class BallMergeAssetCreator
     [MenuItem("Tools/Ball Merge/2. Auto Setup Complete Game Scene")]
     public static void AutoSetupScene()
     {
-        // 1. Ensure assets exist
+        // 1. Ensure assets & block library exist
         GenerateDefaultAssets();
+        BlockLibrarySO blockLib = BlockLevelSetupUtility.EnsureBlockLibraryAndDefinitions();
+        BlockLevelSetupUtility.EnsureSampleLevelsAndDatabase(blockLib);
         string levelPath = $"{DATA_FOLDER}/LevelData_Default.asset";
         LevelDataSO levelData = AssetDatabase.LoadAssetAtPath<LevelDataSO>(levelPath);
 
@@ -248,6 +250,7 @@ public static class BallMergeAssetCreator
         cam.transform.position = new Vector3(0f, 0f, -10f);
         cam.backgroundColor = new Color(0.12f, 0.13f, 0.18f);
         cam.clearFlags = CameraClearFlags.SolidColor;
+        if (cam.GetComponent<CameraShake2D>() == null) cam.gameObject.AddComponent<CameraShake2D>();
 
         // 3. Setup Managers GameObject
         GameObject managersObj = GameObject.Find("[Managers]");
@@ -346,6 +349,18 @@ public static class BallMergeAssetCreator
         BallDropper bd = dropperObj.GetComponent<BallDropper>();
         if (bd == null) bd = dropperObj.AddComponent<BallDropper>();
         bd.Setup(levelData);
+
+        // 6b. Setup LevelBlockManager
+        GameObject blockMgrObj = GameObject.Find("LevelBlockManager");
+        if (blockMgrObj == null)
+        {
+            blockMgrObj = new GameObject("LevelBlockManager");
+            blockMgrObj.transform.SetParent(gameplayObj.transform);
+        }
+        if (blockMgrObj.GetComponent<LevelBlockManager>() == null)
+        {
+            blockMgrObj.AddComponent<LevelBlockManager>();
+        }
 
         // Initialize Level in GameplayController
         gc.InitializeLevel(levelData);
@@ -685,6 +700,10 @@ public static class BallMergeAssetCreator
         GameObject dropsObj = CreateUICard(panel.gameObject, "DropsContainer", new Vector2(360, 840), new Vector2(300, 60), new Color(0, 0, 0, 0));
         TMP_Text drops = CreateUIText(dropsObj, "DropsText", "DROPS: 30 / 30", Vector2.zero, new Vector2(300, 60), 28, new Color(1f, 0.4f, 0.4f), TextAlignmentOptions.Right);
 
+        // Blocks Remaining Container
+        GameObject blocksObj = CreateUICard(panel.gameObject, "BlocksContainer", new Vector2(360, 785), new Vector2(300, 50), new Color(0, 0, 0, 0));
+        TMP_Text blocks = CreateUIText(blocksObj, "BlocksText", "BLOCKS: 0 / 0", Vector2.zero, new Vector2(300, 50), 26, new Color(1f, 0.72f, 0.25f), TextAlignmentOptions.Right);
+
         // Next Ball Preview
         GameObject nextBallObj = CreateUICard(panel.gameObject, "NextBallContainer", new Vector2(-420, 690), new Vector2(160, 120), new Color(0, 0, 0, 0));
 
@@ -702,6 +721,8 @@ public static class BallMergeAssetCreator
         SafeSetProperty(so, "modeTitleText", modeTitle);
         SafeSetProperty(so, "dropsContainer", dropsObj);
         SafeSetProperty(so, "dropsText", drops);
+        SafeSetProperty(so, "blocksContainer", blocksObj);
+        SafeSetProperty(so, "blocksText", blocks);
         SafeSetProperty(so, "nextBallNameText", nextBallName);
         SafeSetProperty(so, "nextBallImage", nextBallImg);
         SafeSetProperty(so, "pauseButton", pause);

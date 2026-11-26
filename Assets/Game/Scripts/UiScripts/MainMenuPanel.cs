@@ -91,16 +91,26 @@ public class MainMenuPanel : UIBasePanel
     private void OnPlayEndlessClicked()
     {
         Debug.Log("[MainMenuPanel] Play Endless clicked.");
-        LoadLevelDataAndStart("LevelData_Endless.asset");
+        LoadLevelDataAndStart("LevelData_Endless.asset", isEndless: true);
     }
 
     private void OnPlayLevel1Clicked()
     {
         Debug.Log("[MainMenuPanel] Play Level 1 clicked.");
-        LoadLevelDataAndStart("LevelData_Level1.asset");
+        LevelDatabaseSO db = LevelDatabaseSO.LoadDefault();
+        LevelDataSO level1 = db != null ? db.GetLevel(1) : null;
+        if (level1 != null)
+        {
+            GameplayController gc = FindAnyObjectByType<GameplayController>();
+            if (gc != null) gc.InitializeLevel(level1);
+            if (uiManager != null) uiManager.ShowPanel<GameplayHUDPanel>();
+            if (GameManager.HasInstance) GameManager.Instance.StartGame();
+            return;
+        }
+        LoadLevelDataAndStart("LevelData_Level1.asset", isEndless: false);
     }
 
-    private void LoadLevelDataAndStart(string assetFileName)
+    private void LoadLevelDataAndStart(string assetFileName, bool isEndless)
     {
         LevelDataSO data = null;
 #if UNITY_EDITOR
@@ -112,6 +122,10 @@ public class MainMenuPanel : UIBasePanel
             if (data != null)
             {
                 gc.InitializeLevel(data);
+            }
+            else if (isEndless)
+            {
+                gc.StartEndlessMode();
             }
             else if (gc.ActiveLevelData != null)
             {

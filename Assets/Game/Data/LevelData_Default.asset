@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   gameMode: 0
   levelNumber: 0
+  winCondition: 0
   targetScore: 0
   maxDrops: 0
   levelName: Classic Endless
@@ -36,3 +37,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: acf6c02866bd8024b98b816f1311bc4f, type: 2}
   dangerLineY: 2.5
   dangerTimeLimit: 3
+  mergeBlastRadius: 1.15
+  mergeBaseDamage: 1
+  scaleDamageWithTier: 0
+  blocks: []

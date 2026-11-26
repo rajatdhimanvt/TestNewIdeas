@@ -16,6 +16,11 @@ public class ContainerBoundary : MonoBehaviour
     [SerializeField] private BoxCollider2D rightWallCollider;
     [SerializeField] private BoxCollider2D floorCollider;
 
+    public float FloorY => floorY;
+    public float ContainerWidth => levelData != null ? levelData.containerWidth : 5.5f;
+    public float ContainerHeight => levelData != null ? levelData.containerHeight : 8.5f;
+    public float WallThickness => levelData != null ? levelData.wallThickness : 0.5f;
+
     private void Awake()
     {
         BuildContainer();
@@ -88,24 +93,36 @@ public class ContainerBoundary : MonoBehaviour
         {
             floorCollider = CreateWallSegment("Floor_Collider");
         }
-        floorCollider.size = new Vector2(width + (thickness * 2f), thickness);
-        floorCollider.transform.localPosition = new Vector3(0f, floorY - (thickness * 0.5f), 0f);
+        ConfigureSegment(floorCollider, new Vector2(width + (thickness * 2f), thickness), new Vector3(0f, floorY - (thickness * 0.5f), 0f));
 
         // 2. Left Wall
         if (leftWallCollider == null)
         {
             leftWallCollider = CreateWallSegment("LeftWall_Collider");
         }
-        leftWallCollider.size = new Vector2(thickness, height);
-        leftWallCollider.transform.localPosition = new Vector3(-halfWidth - (thickness * 0.5f), wallCenterY, 0f);
+        ConfigureSegment(leftWallCollider, new Vector2(thickness, height), new Vector3(-halfWidth - (thickness * 0.5f), wallCenterY, 0f));
 
         // 3. Right Wall
         if (rightWallCollider == null)
         {
             rightWallCollider = CreateWallSegment("RightWall_Collider");
         }
-        rightWallCollider.size = new Vector2(thickness, height);
-        rightWallCollider.transform.localPosition = new Vector3(halfWidth + (thickness * 0.5f), wallCenterY, 0f);
+        ConfigureSegment(rightWallCollider, new Vector2(thickness, height), new Vector3(halfWidth + (thickness * 0.5f), wallCenterY, 0f));
+    }
+
+    private void ConfigureSegment(BoxCollider2D col, Vector2 worldSize, Vector3 localPos)
+    {
+        if (col == null) return;
+        // Keep BoxCollider2D size at (1,1) so localScale controls both collider and 1x1 sprite uniformly
+        col.size = Vector2.one;
+        col.transform.localPosition = localPos;
+        col.transform.localScale = new Vector3(worldSize.x, worldSize.y, 1f);
+
+        SpriteRenderer sr = col.GetComponent<SpriteRenderer>();
+        if (sr != null && sr.sprite == null)
+        {
+            sr.sprite = GetOrCreateBoxSprite();
+        }
     }
 
     private BoxCollider2D CreateWallSegment(string segmentName)
@@ -144,19 +161,14 @@ public class ContainerBoundary : MonoBehaviour
         return boxSprite;
     }
 
-    private void Update()
+#if UNITY_EDITOR
+    private void OnDrawGizmos()
     {
-        // Keep sprite visual transform scaled to box collider size
-        UpdateWallVisual(floorCollider);
-        UpdateWallVisual(leftWallCollider);
-        UpdateWallVisual(rightWallCollider);
+        float width = ContainerWidth;
+        float height = ContainerHeight;
+        Vector3 center = transform.position + new Vector3(0f, floorY + height * 0.5f, 0f);
+        Gizmos.color = new Color(0.2f, 0.85f, 1f, 0.45f);
+        Gizmos.DrawWireCube(center, new Vector3(width, height, 0f));
     }
-
-    private void UpdateWallVisual(BoxCollider2D col)
-    {
-        if (col != null)
-        {
-            col.transform.localScale = new Vector3(col.size.x, col.size.y, 1f);
-        }
-    }
+#endif
 }

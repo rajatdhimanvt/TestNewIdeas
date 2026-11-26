@@ -1,8 +1,9 @@
+using System.Collections;
 using UnityEngine;
 
 /// <summary>
 /// Master controller for active Ball Merge gameplay session.
-/// Coordinates LevelData, BallDropper, ContainerBoundary, and score tracking.
+/// Coordinates LevelData, BallDropper, ContainerBoundary, LevelBlockManager, and win/loss rules.
 /// </summary>
 public class GameplayController : Singleton<GameplayController>
 {
@@ -13,6 +14,7 @@ public class GameplayController : Singleton<GameplayController>
     [SerializeField] private BallDropper dropper;
     [SerializeField] private ContainerBoundary container;
     [SerializeField] private DangerLine dangerLine;
+    [SerializeField] private LevelBlockManager blockManager;
 
     [Header("Session State")]
     [SerializeField] private int currentScore = 0;
@@ -24,6 +26,8 @@ public class GameplayController : Singleton<GameplayController>
     [SerializeField] private int totalDropsUsed = 0;
     [SerializeField] private bool levelCompleted = false;
 
+    private Coroutine outOfMovesCoroutine;
+
     public int CurrentScore => currentScore;
     public int HighScore => highScore;
     public bool IsSessionActive => isSessionActive;
@@ -31,6 +35,7 @@ public class GameplayController : Singleton<GameplayController>
     public int TotalDropsUsed => totalDropsUsed;
     public bool LevelCompleted => levelCompleted;
     public LevelDataSO ActiveLevelData => levelData;
+    public LevelBlockManager BlockManager => blockManager;
 
     protected override void Awake()
     {
@@ -38,6 +43,7 @@ public class GameplayController : Singleton<GameplayController>
         if (dropper == null) dropper = FindAnyObjectByType<BallDropper>();
         if (container == null) container = FindAnyObjectByType<ContainerBoundary>();
         if (dangerLine == null) dangerLine = FindAnyObjectByType<DangerLine>();
+        if (blockManager == null) blockManager = FindAnyObjectByType<LevelBlockManager>();
     }
 
     private void Start()
@@ -48,7 +54,7 @@ public class GameplayController : Singleton<GameplayController>
             InitializeLevel(levelData);
         }
 
-        if (!GameManager.HasInstance || GameManager.Instance.CurrentState != GameState.InGame)
+        if (GameManager.HasInstance && GameManager.Instance.CurrentState != GameState.InGame)
         {
             SetGameplayVisible(false);
         }
@@ -56,7 +62,20 @@ public class GameplayController : Singleton<GameplayController>
 
     public void SetGameplayVisible(bool visible)
     {
-        if (container != null) container.gameObject.SetActive(visible);
+        if (container != null)
+        {
+            if (container.gameObject != gameObject)
+            {
+                container.gameObject.SetActive(visible);
+            }
+            else
+            {
+                for (int i = 0; i < container.transform.childCount; i++)
+                {
+                    container.transform.GetChild(i).gameObject.SetActive(visible);
+                }
+            }
+        }
         if (dangerLine != null) dangerLine.gameObject.SetActive(visible);
         if (dropper != null) dropper.gameObject.SetActive(visible);
     }
@@ -83,6 +102,17 @@ public class GameplayController : Singleton<GameplayController>
         {
             dangerLine.Setup(levelData);
         }
+
+        if (blockManager == null)
+        {
+            blockManager = FindAnyObjectByType<LevelBlockManager>();
+            if (blockManager == null && levelData != null && levelData.HasBlocks)
+            {
+                GameObject bmObj = new GameObject("LevelBlockManager");
+                bmObj.transform.SetParent(transform, false);
+                blockManager = bmObj.AddComponent<LevelBlockManager>();
+            }
+        }
     }
 
     private void OnEnable()
@@ -91,6 +121,7 @@ public class GameplayController : Singleton<GameplayController>
         GameEvents.OnGamePaused += HandleGamePaused;
         GameEvents.OnScoreChanged += HandleScoreAdded;
         GameEvents.OnBallDropped += HandleBallDropped;
+        GameEvents.OnBonusDropsEarned += HandleBonusDropsEarned;
     }
 
     private void OnDisable()
@@ -99,6 +130,7 @@ public class GameplayController : Singleton<GameplayController>
         GameEvents.OnGamePaused -= HandleGamePaused;
         GameEvents.OnScoreChanged -= HandleScoreAdded;
         GameEvents.OnBallDropped -= HandleBallDropped;
+        GameEvents.OnBonusDropsEarned -= HandleBonusDropsEarned;
     }
 
     private void HandleGameStateChanged(GameState newState, GameState oldState)
@@ -137,7 +169,7 @@ public class GameplayController : Singleton<GameplayController>
 
         if (levelData != null && levelData.gameMode == GameMode.Level)
         {
-            if (remainingDrops > 0)
+            if (levelData.maxDrops > 0 && remainingDrops > 0)
             {
                 remainingDrops--;
                 GameEvents.OnRemainingDropsChanged?.Invoke(remainingDrops);
@@ -147,22 +179,59 @@ public class GameplayController : Singleton<GameplayController>
         }
     }
 
+    private void HandleBonusDropsEarned(int bonusDrops)
+    {
+        if (!isSessionActive || bonusDrops <= 0) return;
+
+        if (levelData != null && levelData.gameMode == GameMode.Level && levelData.maxDrops > 0)
+        {
+            remainingDrops += bonusDrops;
+            GameEvents.OnRemainingDropsChanged?.Invoke(remainingDrops);
+
+            if (outOfMovesCoroutine != null)
+            {
+                StopCoroutine(outOfMovesCoroutine);
+                outOfMovesCoroutine = null;
+            }
+        }
+    }
+
     private void HandleScoreAdded(int points)
     {
         AddScore(points);
     }
 
+    public void NotifyBlockProgressChanged()
+    {
+        if (levelData != null && levelData.gameMode == GameMode.Level)
+        {
+            CheckLevelCompletionCriteria();
+        }
+    }
+
     public void StartLevelMode(int levelNum)
     {
-        if (levelData == null)
-        {
-            levelData = ScriptableObject.CreateInstance<LevelDataSO>();
-        }
+        LevelDatabaseSO db = LevelDatabaseSO.LoadDefault();
+        LevelDataSO dbLevel = db != null ? db.GetLevel(levelNum) : null;
 
-        levelData.gameMode = GameMode.Level;
-        levelData.levelNumber = levelNum;
-        levelData.targetScore = 300 + (levelNum * 150);
-        levelData.maxDrops = Mathf.Max(15, 35 - (levelNum / 5));
+        if (dbLevel != null)
+        {
+            levelData = dbLevel;
+        }
+        else
+        {
+            if (levelData == null)
+            {
+                levelData = ScriptableObject.CreateInstance<LevelDataSO>();
+            }
+
+            levelData.gameMode = GameMode.Level;
+            levelData.levelNumber = levelNum;
+            levelData.winCondition = LevelWinCondition.TargetScore;
+            levelData.targetScore = 300 + (levelNum * 150);
+            levelData.maxDrops = Mathf.Max(15, 35 - (levelNum / 5));
+            levelData.blocks?.Clear();
+        }
 
         InitializeLevel(levelData);
     }
@@ -207,43 +276,137 @@ public class GameplayController : Singleton<GameplayController>
     {
         if (levelData == null || levelData.gameMode != GameMode.Level || levelCompleted || !isSessionActive) return;
 
-        // Check Win Condition
-        if (currentScore >= levelData.targetScore)
+        bool hasRequiredBlocks = blockManager != null && blockManager.TotalRequiredBlocks > 0;
+        bool blocksCleared = hasRequiredBlocks && blockManager.RemainingRequiredBlocks <= 0;
+        bool scoreReached = currentScore >= levelData.targetScore;
+
+        bool isWin = false;
+        switch (levelData.winCondition)
         {
-            levelCompleted = true;
-            Debug.Log($"[GameplayController] Level {levelData.levelNumber} COMPLETED! Target score {levelData.targetScore} reached.");
+            case LevelWinCondition.DestroyAllBlocks:
+                isWin = hasRequiredBlocks ? blocksCleared : scoreReached;
+                break;
+            case LevelWinCondition.BlocksAndScore:
+                isWin = (hasRequiredBlocks ? blocksCleared : true) && scoreReached;
+                break;
+            case LevelWinCondition.TargetScore:
+            default:
+                isWin = scoreReached;
+                break;
+        }
 
-            int stars = 1;
-            if (PlayerDataManager.HasInstance)
-            {
-                stars = PlayerDataManager.Instance.SaveLevelCompletion(
-                    levelData.levelNumber, 
-                    currentScore, 
-                    remainingDrops, 
-                    levelData.maxDrops, 
-                    levelData.targetScore
-                );
-            }
-
-            LevelWinPanel winPanel = UIManager.HasInstance ? UIManager.Instance.GetPanel<LevelWinPanel>() : null;
-            if (winPanel != null)
-            {
-                winPanel.SetupLevelWin(levelData.levelNumber, currentScore, totalDropsUsed, stars);
-            }
-
-            GameEvents.OnLevelCompleted?.Invoke(levelData.levelNumber, true);
-            GameEvents.OnPlaySFX?.Invoke("LevelWin");
+        if (isWin)
+        {
+            CompleteLevel();
             return;
         }
 
-        // Check Lose Condition (Drops exhausted before target score reached)
-        if (remainingDrops <= 0 && currentScore < levelData.targetScore)
+        // Check Lose Condition when limited drops run out (wait for final balls & merges to settle)
+        if (levelData.maxDrops > 0 && remainingDrops <= 0 && outOfMovesCoroutine == null)
         {
-            Debug.Log($"[GameplayController] Level {levelData.levelNumber} FAILED! Out of drops ({levelData.maxDrops}). Score: {currentScore}/{levelData.targetScore}");
-            GameEvents.OnLevelCompleted?.Invoke(levelData.levelNumber, false);
-            GameEvents.OnPlaySFX?.Invoke("LevelLose");
-            TriggerGameOver();
+            outOfMovesCoroutine = StartCoroutine(WaitAndCheckOutOfMovesRoutine());
         }
+    }
+
+    private void CompleteLevel()
+    {
+        levelCompleted = true;
+        if (outOfMovesCoroutine != null)
+        {
+            StopCoroutine(outOfMovesCoroutine);
+            outOfMovesCoroutine = null;
+        }
+
+        if (dropper != null)
+        {
+            dropper.SetInputActive(false);
+        }
+
+        if (dangerLine != null)
+        {
+            dangerLine.SetSessionActive(false);
+        }
+
+        Debug.Log($"[GameplayController] Level {levelData.levelNumber} COMPLETED! Score: {currentScore}, Drops Used: {totalDropsUsed}");
+
+        int stars = 1;
+        if (PlayerDataManager.HasInstance)
+        {
+            int targetForStars = Mathf.Max(100, levelData.targetScore);
+            stars = PlayerDataManager.Instance.SaveLevelCompletion(
+                levelData.levelNumber,
+                currentScore,
+                remainingDrops,
+                levelData.maxDrops,
+                targetForStars
+            );
+        }
+
+        if (UIManager.HasInstance)
+        {
+            LevelWinPanel winPanel = UIManager.Instance.GetPanel<LevelWinPanel>();
+            if (winPanel != null)
+            {
+                winPanel.SetupLevelWin(levelData.levelNumber, currentScore, totalDropsUsed, stars);
+                UIManager.Instance.ShowPanel<LevelWinPanel>(false);
+            }
+        }
+
+        GameEvents.OnLevelCompleted?.Invoke(levelData.levelNumber, true);
+        GameEvents.OnPlaySFX?.Invoke("LevelWin");
+    }
+
+    private IEnumerator WaitAndCheckOutOfMovesRoutine()
+    {
+        float initialWait = levelData != null ? Mathf.Max(0.55f, levelData.dropCooldown + 0.35f) : 0.85f;
+        yield return new WaitForSeconds(initialWait);
+
+        float settleTimer = 0f;
+        const float maxSettleWait = 3.5f;
+
+        while (settleTimer < maxSettleWait)
+        {
+            if (!isSessionActive || levelCompleted || remainingDrops > 0)
+            {
+                outOfMovesCoroutine = null;
+                yield break;
+            }
+
+            bool mergesActive = BallMergeManager.HasInstance && BallMergeManager.Instance.ActiveMergeCount > 0;
+            bool ballsMoving = false;
+            if (!mergesActive)
+            {
+                Ball[] balls = FindObjectsByType<Ball>(FindObjectsSortMode.None);
+                for (int i = 0; i < balls.Length; i++)
+                {
+                    if (balls[i] != null && balls[i].IsDropped && balls[i].Rigidbody != null)
+                    {
+                        if (balls[i].Rigidbody.linearVelocity.sqrMagnitude > 0.09f)
+                        {
+                            ballsMoving = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (!mergesActive && !ballsMoving)
+            {
+                break;
+            }
+
+            settleTimer += 0.15f;
+            yield return new WaitForSeconds(0.15f);
+        }
+
+        outOfMovesCoroutine = null;
+
+        if (!isSessionActive || levelCompleted || remainingDrops > 0) yield break;
+
+        Debug.Log($"[GameplayController] Level {levelData.levelNumber} FAILED! Out of drops ({levelData.maxDrops}).");
+        GameEvents.OnLevelCompleted?.Invoke(levelData.levelNumber, false);
+        GameEvents.OnPlaySFX?.Invoke("LevelLose");
+        TriggerGameOver();
     }
 
     /// <summary>
@@ -266,19 +429,45 @@ public class GameplayController : Singleton<GameplayController>
     /// </summary>
     public virtual void StartSession()
     {
+        if (outOfMovesCoroutine != null)
+        {
+            StopCoroutine(outOfMovesCoroutine);
+            outOfMovesCoroutine = null;
+        }
+
         ClearAllBalls();
+        if (BallMergeManager.HasInstance)
+        {
+            BallMergeManager.Instance.ResetMergeState();
+        }
 
         currentScore = 0;
         totalDropsUsed = 0;
         levelCompleted = false;
         isSessionActive = true;
 
+        if (blockManager == null)
+        {
+            blockManager = FindAnyObjectByType<LevelBlockManager>();
+            if (blockManager == null && levelData != null && levelData.HasBlocks)
+            {
+                GameObject bmObj = new GameObject("LevelBlockManager");
+                bmObj.transform.SetParent(transform, false);
+                blockManager = bmObj.AddComponent<LevelBlockManager>();
+            }
+        }
+
+        if (blockManager != null)
+        {
+            blockManager.LoadLevelBlocks(levelData, container);
+        }
+
         if (levelData != null && levelData.gameMode == GameMode.Level)
         {
             remainingDrops = levelData.maxDrops;
             GameEvents.OnLevelStarted?.Invoke(levelData.levelNumber);
             GameEvents.OnRemainingDropsChanged?.Invoke(remainingDrops);
-            Debug.Log($"[GameplayController] Started LEVEL Mode: Level {levelData.levelNumber} (Target: {levelData.targetScore}, Max Drops: {levelData.maxDrops})");
+            Debug.Log($"[GameplayController] Started LEVEL Mode: Level {levelData.levelNumber} (Win: {levelData.winCondition}, Max Drops: {levelData.maxDrops})");
         }
         else
         {
@@ -307,10 +496,33 @@ public class GameplayController : Singleton<GameplayController>
     /// </summary>
     public virtual void EndSession()
     {
+        EndSessionInternal(resetScore: true);
+    }
+
+    private void EndSessionInternal(bool resetScore)
+    {
+        if (outOfMovesCoroutine != null)
+        {
+            StopCoroutine(outOfMovesCoroutine);
+            outOfMovesCoroutine = null;
+        }
+
         ClearAllBalls();
+        if (BallMergeManager.HasInstance)
+        {
+            BallMergeManager.Instance.ResetMergeState();
+        }
+
+        if (blockManager != null)
+        {
+            blockManager.ClearLevelBlocks();
+        }
 
         isSessionActive = false;
-        currentScore = 0;
+        if (resetScore)
+        {
+            currentScore = 0;
+        }
         totalDropsUsed = 0;
         levelCompleted = false;
 
@@ -318,6 +530,7 @@ public class GameplayController : Singleton<GameplayController>
 
         if (dropper != null)
         {
+            dropper.ClearHeldBall();
             dropper.SetInputActive(false);
         }
 
@@ -329,14 +542,15 @@ public class GameplayController : Singleton<GameplayController>
     }
 
     /// <summary>
-    /// Helper to trigger GameOver from gameplay rules (e.g. overflow).
+    /// Helper to trigger GameOver from gameplay rules (e.g. overflow or out of moves).
     /// </summary>
     public void TriggerGameOver()
     {
-        EndSession();
+        int finalScore = currentScore;
+        EndSessionInternal(resetScore: false);
         if (GameManager.HasInstance)
         {
-            GameManager.Instance.TriggerGameOver(currentScore);
+            GameManager.Instance.TriggerGameOver(finalScore);
         }
     }
 }

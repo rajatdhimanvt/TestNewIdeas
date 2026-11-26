@@ -1,0 +1,127 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a7ead9bd80c99f84db722a3727d61b79, type: 3}
+  m_Name: Level_04
+  m_EditorClassIdentifier: 
+  gameMode: 1
+  levelNumber: 4
+  winCondition: 1
+  targetScore: 950
+  maxDrops: 22
+  levelName: Twin Towers
+  dropCooldown: 0.5
+  dropHeight: 3.8
+  containerWidth: 5.5
+  containerHeight: 8.5
+  wallThickness: 0.5
+  defaultKit: {fileID: 11400000, guid: 10dc499d3e8d36246a1fd039d0ef4d79, type: 2}
+  allTiers:
+  - {fileID: 11400000, guid: fb6e83e60ce602949ad21a3f9ae7d815, type: 2}
+  - {fileID: 11400000, guid: c8f2502523d51b84b927137cfa9fd8a6, type: 2}
+  - {fileID: 11400000, guid: acf6c02866bd8024b98b816f1311bc4f, type: 2}
+  - {fileID: 11400000, guid: 6b9ef56a2e4deb24b83cdfa7b5fd6b2c, type: 2}
+  - {fileID: 11400000, guid: 60a84b337b00da3438bcc06078e4bf19, type: 2}
+  - {fileID: 11400000, guid: 05313cfdce5e88a4eadf5bce921f9b28, type: 2}
+  droppableTiers:
+  - {fileID: 11400000, guid: fb6e83e60ce602949ad21a3f9ae7d815, type: 2}
+  - {fileID: 11400000, guid: c8f2502523d51b84b927137cfa9fd8a6, type: 2}
+  - {fileID: 11400000, guid: acf6c02866bd8024b98b816f1311bc4f, type: 2}
+  dangerLineY: 2.5
+  dangerTimeLimit: 3
+  mergeBlastRadius: 1.15
+  mergeBaseDamage: 1
+  scaleDamageWithTier: 0
+  blocks:
+  - instanceGuid: c5ac97e564484b2f9f62a5b1fd79a65c
+    blockId: wood_shelf
+    blockDefinition: {fileID: 11400000, guid: a59ee98cb8906094fb470950480e21a3, type: 2}
+    position: {x: -1.4, y: 0.65}
+    rotation: -16
+    size: {x: 1.45, y: 0.16}
+    hpOverride: 0
+    overrideRequiredToClear: 0
+    requiredToClear: 0
+    addSupportShelf: 0
+    useCustomColor: 0
+    customColor: {r: 1, g: 1, b: 1, a: 1}
+  - instanceGuid: da8c3e1109294b24a13c3332752c41bf
+    blockId: wood_shelf
+    blockDefinition: {fileID: 11400000, guid: a59ee98cb8906094fb470950480e21a3, type: 2}
+    position: {x: 1.4, y: 0.65}
+    rotation: 16
+    size: {x: 1.45, y: 0.16}
+    hpOverride: 0
+    overrideRequiredToClear: 0
+    requiredToClear: 0
+    addSupportShelf: 0
+    useCustomColor: 0
+    customColor: {r: 1, g: 1, b: 1, a: 1}
+  - instanceGuid: 4511af8bdae942d18d142cf67efcd9ad
+    blockId: stone_strong
+    blockDefinition: {fileID: 11400000, guid: 30140e57e983075498c45759f2feff4d, type: 2}
+    position: {x: -1.35, y: -1.05}
+    rotation: 0
+    size: {x: 0.9, y: 0.9}
+    hpOverride: 3
+    overrideRequiredToClear: 0
+    requiredToClear: 1
+    addSupportShelf: 1
+    useCustomColor: 0
+    customColor: {r: 1, g: 1, b: 1, a: 1}
+  - instanceGuid: 59c3dd44a52147668a96486169abab32
+    blockId: stone_strong
+    blockDefinition: {fileID: 11400000, guid: 30140e57e983075498c45759f2feff4d, type: 2}
+    position: {x: 1.35, y: -1.05}
+    rotation: 0
+    size: {x: 0.9, y: 0.9}
+    hpOverride: 3
+    overrideRequiredToClear: 0
+    requiredToClear: 1
+    addSupportShelf: 1
+    useCustomColor: 0
+    customColor: {r: 1, g: 1, b: 1, a: 1}
+  - instanceGuid: b84942e9bcce494eae779afe17224f3e
+    blockId: bonus_drop
+    blockDefinition: {fileID: 11400000, guid: ca7dbdea4391c0544aa000d7f9167c08, type: 2}
+    position: {x: 0, y: -0.35}
+    rotation: 0
+    size: {x: 0.82, y: 0.82}
+    hpOverride: 2
+    overrideRequiredToClear: 0
+    requiredToClear: 1
+    addSupportShelf: 1
+    useCustomColor: 0
+    customColor: {r: 1, g: 1, b: 1, a: 1}
+  - instanceGuid: 1eb5cac1ea614fcbbaed7f9c70632610
+    blockId: crate_normal
+    blockDefinition: {fileID: 11400000, guid: bb6557060c7c32f4db51e0d5cadfacbf, type: 2}
+    position: {x: -0.85, y: -2.65}
+    rotation: 0
+    size: {x: 0.85, y: 0.85}
+    hpOverride: 2
+    overrideRequiredToClear: 0
+    requiredToClear: 1
+    addSupportShelf: 0
+    useCustomColor: 0
+    customColor: {r: 1, g: 1, b: 1, a: 1}
+  - instanceGuid: ff7e023f8ec042f099c8c1e0728a140a
+    blockId: crate_normal
+    blockDefinition: {fileID: 11400000, guid: bb6557060c7c32f4db51e0d5cadfacbf, type: 2}
+    position: {x: 0.85, y: -2.65}
+    rotation: 0
+    size: {x: 0.85, y: 0.85}
+    hpOverride: 2
+    overrideRequiredToClear: 0
+    requiredToClear: 1
+    addSupportShelf: 0
+    useCustomColor: 0
+    customColor: {r: 1, g: 1, b: 1, a: 1}
