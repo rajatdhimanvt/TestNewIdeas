@@ -58,7 +58,7 @@ public class GenericPopupPanel : UIBasePanel
 
         if (cancelButton != null)
         {
-            bool hasCancel = onCancel != null;
+            bool hasCancel = onCancel != null || !string.IsNullOrEmpty(cancelLabel);
             cancelButton.gameObject.SetActive(hasCancel);
             if (cancelButtonText != null) cancelButtonText.text = cancelLabel;
         }

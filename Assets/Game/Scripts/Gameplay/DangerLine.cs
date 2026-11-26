@@ -23,6 +23,7 @@ public class DangerLine : MonoBehaviour
     private BoxCollider2D triggerCollider;
     private SpriteRenderer lineRenderer;
     private readonly HashSet<Ball> ballsInZone = new HashSet<Ball>();
+    private readonly Dictionary<Ball, int> ballColliderCounts = new Dictionary<Ball, int>();
 
     public float CurrentTimer => currentTimer;
     public bool IsDangerActive => isDangerActive;
@@ -141,6 +142,7 @@ public class DangerLine : MonoBehaviour
     public void ResetTimer()
     {
         ballsInZone.Clear();
+        ballColliderCounts.Clear();
         isDangerActive = false;
         currentTimer = levelData != null ? levelData.dangerTimeLimit : 3.0f;
         if (lineRenderer != null)
@@ -151,19 +153,30 @@ public class DangerLine : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        Ball ball = other.GetComponent<Ball>();
+        Ball ball = other.GetComponentInParent<Ball>();
         if (ball != null)
         {
+            ballColliderCounts.TryGetValue(ball, out int count);
+            ballColliderCounts[ball] = count + 1;
             ballsInZone.Add(ball);
         }
     }
 
     private void OnTriggerExit2D(Collider2D other)
     {
-        Ball ball = other.GetComponent<Ball>();
-        if (ball != null)
+        Ball ball = other.GetComponentInParent<Ball>();
+        if (ball != null && ballColliderCounts.TryGetValue(ball, out int count))
         {
-            ballsInZone.Remove(ball);
+            count--;
+            if (count <= 0)
+            {
+                ballColliderCounts.Remove(ball);
+                ballsInZone.Remove(ball);
+            }
+            else
+            {
+                ballColliderCounts[ball] = count;
+            }
         }
     }
 

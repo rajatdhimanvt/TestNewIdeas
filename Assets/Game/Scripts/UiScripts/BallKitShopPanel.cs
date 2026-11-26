@@ -45,8 +45,9 @@ public class BallKitShopPanel : UIBasePanel
         PlayerDataManager.OnCoinsChanged += UpdateCoinDisplay;
     }
 
-    private void OnDestroy()
+    protected override void OnDestroy()
     {
+        base.OnDestroy();
         PlayerDataManager.OnCoinsChanged -= UpdateCoinDisplay;
     }
 

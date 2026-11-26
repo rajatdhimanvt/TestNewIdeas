@@ -15,8 +15,8 @@ MonoBehaviour:
   gameMode: 1
   levelNumber: 1
   winCondition: 1
-  targetScore: 400
-  maxDrops: 20
+  targetScore: 200
+  maxDrops: 30
   levelName: Crate Valley
   dropCooldown: 0.5
   dropHeight: 3.8
@@ -37,7 +37,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: acf6c02866bd8024b98b816f1311bc4f, type: 2}
   dangerLineY: 2.5
   dangerTimeLimit: 3
-  mergeBlastRadius: 0.4
+  mergeBlastRadius: 1.25
   mergeBaseDamage: 1
   scaleDamageWithTier: 0
   blocks:
@@ -53,10 +53,16 @@ MonoBehaviour:
     addSupportShelf: 1
     useCustomColor: 0
     customColor: {r: 1, g: 1, b: 1, a: 1}
+    overrideMovement: 0
+    moveOffset: {x: 1.8, y: 0}
+    moveSpeed: 1.4
+    lockChannelOverride: 0
+    magnetRadiusOverride: 0
+    magnetForceOverride: 0
   - instanceGuid: 2bd5b0b72c1747faa324fecd469d8e63
     blockId: crate_weak
     blockDefinition: {fileID: 11400000, guid: 27974385d0c62004dbca859b7e5dce45, type: 2}
-    position: {x: 1.45, y: 0.35}
+    position: {x: 1.45, y: -0.35}
     rotation: 0
     size: {x: 0.85, y: 0.85}
     hpOverride: 1
@@ -65,6 +71,12 @@ MonoBehaviour:
     addSupportShelf: 1
     useCustomColor: 0
     customColor: {r: 1, g: 1, b: 1, a: 1}
+    overrideMovement: 0
+    moveOffset: {x: 1.8, y: 0}
+    moveSpeed: 1.4
+    lockChannelOverride: 0
+    magnetRadiusOverride: 0
+    magnetForceOverride: 0
   - instanceGuid: 0ad9bd216d2f4f6a9ac49b6675223691
     blockId: crate_normal
     blockDefinition: {fileID: 11400000, guid: bb6557060c7c32f4db51e0d5cadfacbf, type: 2}
@@ -77,6 +89,12 @@ MonoBehaviour:
     addSupportShelf: 1
     useCustomColor: 0
     customColor: {r: 1, g: 1, b: 1, a: 1}
+    overrideMovement: 0
+    moveOffset: {x: 1.8, y: 0}
+    moveSpeed: 1.4
+    lockChannelOverride: 0
+    magnetRadiusOverride: 0
+    magnetForceOverride: 0
   - instanceGuid: 507dfaff30dc4231b8d833a38404cac6
     blockId: crate_weak
     blockDefinition: {fileID: 11400000, guid: 27974385d0c62004dbca859b7e5dce45, type: 2}
@@ -89,18 +107,30 @@ MonoBehaviour:
     addSupportShelf: 1
     useCustomColor: 0
     customColor: {r: 1, g: 1, b: 1, a: 1}
+    overrideMovement: 0
+    moveOffset: {x: 1.8, y: 0}
+    moveSpeed: 1.4
+    lockChannelOverride: 0
+    magnetRadiusOverride: 0
+    magnetForceOverride: 0
   - instanceGuid: 487979417d744fbdb20690f1ddf7f47f
     blockId: stone_strong
     blockDefinition: {fileID: 11400000, guid: 30140e57e983075498c45759f2feff4d, type: 2}
     position: {x: -1.5, y: -2}
     rotation: 0
     size: {x: 0.95, y: 0.95}
-    hpOverride: 0
+    hpOverride: 2
     overrideRequiredToClear: 0
     requiredToClear: 1
     addSupportShelf: 0
     useCustomColor: 0
     customColor: {r: 1, g: 1, b: 1, a: 1}
+    overrideMovement: 0
+    moveOffset: {x: 1.8, y: 0}
+    moveSpeed: 1.4
+    lockChannelOverride: 0
+    magnetRadiusOverride: 0
+    magnetForceOverride: 0
   - instanceGuid: 52932e2a554c41b9993197c1dea9db3c
     blockId: wood_shelf
     blockDefinition: {fileID: 11400000, guid: a59ee98cb8906094fb470950480e21a3, type: 2}
@@ -113,3 +143,9 @@ MonoBehaviour:
     addSupportShelf: 0
     useCustomColor: 0
     customColor: {r: 1, g: 1, b: 1, a: 1}
+    overrideMovement: 0
+    moveOffset: {x: 1.8, y: 0}
+    moveSpeed: 1.4
+    lockChannelOverride: 0
+    magnetRadiusOverride: 0
+    magnetForceOverride: 0

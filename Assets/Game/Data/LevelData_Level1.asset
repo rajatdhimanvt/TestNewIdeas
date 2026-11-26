@@ -15,9 +15,9 @@ MonoBehaviour:
   gameMode: 1
   levelNumber: 1
   winCondition: 0
-  targetScore: 500
+  targetScore: 200
   maxDrops: 30
-  levelName: 'Level 1: Target 500'
+  levelName: 'Level 1: Target 200'
   dropCooldown: 0.5
   dropHeight: 3.8
   containerWidth: 5.5

@@ -148,11 +148,11 @@ namespace RaftRumble
         /// </summary>
         public static RaftGameplayUI EnsureUIExists()
         {
-            var existing = FindFirstObjectByType<RaftGameplayUI>();
+            var existing = FindAnyObjectByType<RaftGameplayUI>();
             if (existing != null) return existing;
 
             // Ensure EventSystem
-            if (FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
+            if (FindAnyObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
             {
                 GameObject es = new GameObject("EventSystem");
                 es.AddComponent<UnityEngine.EventSystems.EventSystem>();

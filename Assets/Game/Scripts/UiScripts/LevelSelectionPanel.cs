@@ -32,8 +32,9 @@ public class LevelSelectionPanel : UIBasePanel
         PlayerDataManager.OnLevelStarsUpdated += HandleLevelStarsUpdated;
     }
 
-    private void OnDestroy()
+    protected override void OnDestroy()
     {
+        base.OnDestroy();
         PlayerDataManager.OnCoinsChanged -= UpdateCoinDisplay;
         PlayerDataManager.OnLevelStarsUpdated -= HandleLevelStarsUpdated;
     }

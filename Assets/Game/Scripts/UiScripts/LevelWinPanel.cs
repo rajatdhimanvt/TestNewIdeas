@@ -181,6 +181,8 @@ public class LevelWinPanel : UIBasePanel
     {
         StopChestRoutine();
         Debug.Log("[LevelWinPanel] Next level clicked.");
+        currentLevelNumber++;
+
         if (uiManager != null)
         {
             uiManager.HidePanel<LevelWinPanel>();
@@ -188,7 +190,7 @@ public class LevelWinPanel : UIBasePanel
 
         if (GameplayController.HasInstance)
         {
-            GameplayController.Instance.StartLevelMode(currentLevelNumber + 1);
+            GameplayController.Instance.StartLevelMode(currentLevelNumber);
         }
 
         if (GameManager.HasInstance)

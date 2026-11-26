@@ -570,19 +570,22 @@ public static class BlockLevelSetupUtility
             AssetDatabase.CreateAsset(database, LEVEL_DATABASE_PATH);
         }
 
-        var foundLevels = new List<LevelDataSO>();
+        var levelsByNumber = new Dictionary<int, LevelDataSO>();
         string[] guids = AssetDatabase.FindAssets("t:LevelDataSO");
         for (int i = 0; i < guids.Length; i++)
         {
             string path = AssetDatabase.GUIDToAssetPath(guids[i]);
             LevelDataSO lvl = AssetDatabase.LoadAssetAtPath<LevelDataSO>(path);
-            if (lvl != null && lvl.gameMode == GameMode.Level)
+            if (lvl == null || lvl.gameMode != GameMode.Level) continue;
+
+            bool isCampaignAsset = path.StartsWith(LEVELS_FOLDER, StringComparison.OrdinalIgnoreCase);
+            if (!levelsByNumber.ContainsKey(lvl.levelNumber) || isCampaignAsset)
             {
-                foundLevels.Add(lvl);
+                levelsByNumber[lvl.levelNumber] = lvl;
             }
         }
 
-        database.levels = foundLevels;
+        database.levels = new List<LevelDataSO>(levelsByNumber.Values);
         database.SortByLevelNumber();
         EditorUtility.SetDirty(database);
         LevelDatabaseSO.ClearCache();

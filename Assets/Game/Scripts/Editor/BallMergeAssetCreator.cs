@@ -396,6 +396,36 @@ public static class BallMergeAssetCreator
         Debug.Log("[BallMergeAssetCreator] COMPLETE GAME SCENE & UI CANVAS GENERATED SUCCESSFULLY!");
     }
 
+    [MenuItem("Tools/Ball Merge/3. Rebuild Main Menu Panel (Hyper-Casual)")]
+    public static void RebuildMainMenuOnly()
+    {
+        LoadUISprites();
+        GameObject uiObj = GameObject.Find("UIManager_Canvas");
+        if (uiObj == null)
+        {
+            UIManager existingUim = Object.FindAnyObjectByType<UIManager>();
+            if (existingUim != null) uiObj = existingUim.gameObject;
+        }
+
+        if (uiObj == null)
+        {
+            Debug.LogError("[BallMergeAssetCreator] UIManager_Canvas not found in active scene! Please run 'Tools -> Ball Merge -> 2. Auto Setup Complete Game Scene' first.");
+            return;
+        }
+
+        BuildMainMenuPanel(uiObj);
+
+        UIManager uim = uiObj.GetComponent<UIManager>();
+        if (uim != null)
+        {
+            uim.Init();
+            uim.ShowPanel<MainMenuPanel>();
+        }
+
+        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
+        Debug.Log("[BallMergeAssetCreator] Hyper-Casual Main Menu Panel rebuilt successfully!");
+    }
+
 
     private static Sprite s_btnGreen;
     private static Sprite s_btnYellow;
@@ -405,6 +435,32 @@ public static class BallMergeAssetCreator
     private static Sprite s_frameCyan;
     private static Sprite s_framePurple;
     private static Sprite s_bannerBlue;
+    private static Sprite s_bannerYellow;
+    private static Sprite s_circleSprite;
+
+    private static Sprite GetCircleSprite()
+    {
+        if (s_circleSprite != null) return s_circleSprite;
+        int size = 128;
+        Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        tex.filterMode = FilterMode.Bilinear;
+        float center = size * 0.5f;
+        float radius = center - 1f;
+        Color[] cols = new Color[size * size];
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float dist = Vector2.Distance(new Vector2(x, y), new Vector2(center, center));
+                float alpha = Mathf.Clamp01((radius - dist) + 0.5f);
+                cols[y * size + x] = new Color(1f, 1f, 1f, alpha);
+            }
+        }
+        tex.SetPixels(cols);
+        tex.Apply();
+        s_circleSprite = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
+        return s_circleSprite;
+    }
 
     private static void LoadUISprites()
     {
@@ -420,6 +476,7 @@ public static class BallMergeAssetCreator
         s_frameCyan = pack2.FirstOrDefault(s => s.name == "UI-pack_Sprite_2_4");
         s_framePurple = pack2.FirstOrDefault(s => s.name == "UI-pack_Sprite_2_2");
         s_bannerBlue = pack2.FirstOrDefault(s => s.name == "UI-pack_Sprite_2_5");
+        s_bannerYellow = pack2.FirstOrDefault(s => s.name == "UI-pack_Sprite_2_1");
 
         Debug.Log($"[BallMergeAssetCreator] Loaded {pack2.Length} sprites: Green={s_btnGreen != null}, Yellow={s_btnYellow != null}, Blue={s_btnBlue != null}, Red={s_btnRed != null}, FrameBlue={s_frameBlue != null}, FrameCyan={s_frameCyan != null}");
     }
@@ -530,70 +587,173 @@ public static class BallMergeAssetCreator
         MainMenuPanel panel = EnsurePanel<MainMenuPanel>(parent);
         ClearChildren(panel.gameObject);
 
-        // Dark Background
-        CreateUIImage(panel.gameObject, "Background", Vector2.zero, new Vector2(1080, 1920), new Color(0.08f, 0.09f, 0.14f, 1f));
+        // 1. Deep Modern Gradient/Dark Backdrop
+        CreateUIImage(panel.gameObject, "Background", Vector2.zero, new Vector2(1080, 1920), new Color(0.06f, 0.08f, 0.12f, 1f));
 
-        // 1. Header Card Box (Branding, Highscore & Coin Counter)
-        GameObject headerCard = CreateUICard(panel.gameObject, "HeaderCard", new Vector2(0, 680), new Vector2(940, 240), new Color(0.12f, 0.14f, 0.22f, 0.95f));
+        // Subtle ambient aura glow behind the game logo
+        Image ambientGlow = CreateUIImage(panel.gameObject, "AmbientGlow", new Vector2(0, 520), new Vector2(850, 850), new Color(0.12f, 0.35f, 0.7f, 0.14f));
+        ambientGlow.sprite = GetCircleSprite();
 
-        TMP_Text title = CreateUIText(headerCard, "TitleText", "BALL MERGE 2D", new Vector2(0, 50), new Vector2(900, 90), 64, new Color(0.95f, 0.85f, 0.2f), TextAlignmentOptions.Center);
+        // -------------------------------------------------------------
+        // 2. TOP STATUS BAR (Y = 820)
+        // -------------------------------------------------------------
+        GameObject topBar = new GameObject("TopStatusBar");
+        topBar.transform.SetParent(panel.transform, false);
+        RectTransform topBarRect = topBar.AddComponent<RectTransform>();
+        topBarRect.anchoredPosition = new Vector2(0, 820);
+        topBarRect.sizeDelta = new Vector2(980, 100);
 
-        // HighScore Pill Badge
-        GameObject hsBadge = CreateUICard(headerCard, "HighScoreBadge", new Vector2(-220, -45), new Vector2(400, 55), new Color(0.22f, 0.18f, 0.1f, 0.95f));
-        TMP_Text highScore = CreateUIText(hsBadge, "HighScoreText", "BEST SCORE: 0", Vector2.zero, new Vector2(400, 55), 24, new Color(1.0f, 0.88f, 0.3f), TextAlignmentOptions.Center);
+        // Settings Button (Left: X = -430)
+        Button settingsBtn = CreateUIButton(topBar, "SettingsButton", "⚙", new Vector2(-430, 0), new Vector2(90, 90), new Color(0.18f, 0.28f, 0.44f), Color.white, s_btnBlue);
+        TMP_Text settingsTxt = settingsBtn.GetComponentInChildren<TMP_Text>();
+        if (settingsTxt != null) settingsTxt.fontSize = 44;
 
-        // Coin Counter Badge
-        GameObject coinBadge = CreateUICard(headerCard, "CoinBadge", new Vector2(220, -45), new Vector2(400, 55), new Color(0.18f, 0.16f, 0.08f, 0.95f));
-        TMP_Text coinBalanceText = CreateUIText(coinBadge, "CoinBalanceText", "🪙 0", Vector2.zero, new Vector2(400, 55), 26, new Color(1.0f, 0.88f, 0.3f), TextAlignmentOptions.Center);
+        // HighScore Pill Badge (Center: X = 0)
+        GameObject hsBadge = CreateUICard(topBar, "HighScoreBadge", new Vector2(0, 0), new Vector2(400, 75), new Color(0.16f, 0.14f, 0.08f, 0.95f), s_frameCyan);
+        TMP_Text highScoreTxt = CreateUIText(hsBadge, "HighScoreText", "BEST: 0", Vector2.zero, new Vector2(380, 65), 26, new Color(1.0f, 0.88f, 0.25f), TextAlignmentOptions.Center);
+        highScoreTxt.fontStyle = FontStyles.Bold;
 
-        // 2. Daily Rewards Banner Card (Y = 410)
-        GameObject dailyCard = CreateUICard(panel.gameObject, "DailyCard", new Vector2(0, 410), new Vector2(940, 110), new Color(0.22f, 0.16f, 0.08f, 0.95f));
-        Button dailyRewardButton = CreateUIButton(dailyCard, "DailyRewardButton", "🎁 DAILY REWARDS & SPIN WHEEL", Vector2.zero, new Vector2(940, 110), new Color(0.95f, 0.65f, 0.1f), Color.white);
+        // Coin Counter Pill Badge (Right: X = 370)
+        GameObject coinBadge = CreateUICard(topBar, "CoinBadge", new Vector2(370, 0), new Vector2(280, 75), new Color(0.18f, 0.16f, 0.08f, 0.95f), s_frameCyan);
+        TMP_Text coinBalanceText = CreateUIText(coinBadge, "CoinBalanceText", "0 COINS", new Vector2(-15, 0), new Vector2(200, 65), 26, new Color(1.0f, 0.9f, 0.35f), TextAlignmentOptions.Center);
+        coinBalanceText.fontStyle = FontStyles.Bold;
+        // Shiny green plus badge on coin counter
+        GameObject plusBadge = CreateUICard(coinBadge, "PlusBadge", new Vector2(105, 0), new Vector2(46, 46), new Color(0.18f, 0.8f, 0.44f), s_btnGreen);
+        TMP_Text plusTxt = CreateUIText(plusBadge, "PlusText", "+", Vector2.zero, new Vector2(46, 46), 28, Color.white, TextAlignmentOptions.Center);
+        plusTxt.fontStyle = FontStyles.Bold;
 
-        // 3. Play Mode Card 1: Endless Mode Card (Y = 220)
-        GameObject endlessCard = CreateUICard(panel.gameObject, "EndlessModeCard", new Vector2(0, 220), new Vector2(940, 200), new Color(0.1f, 0.22f, 0.18f, 0.95f));
+        // -------------------------------------------------------------
+        // 3. HERO GAME LOGO & FLOATING EYE-CANDY (Y = 530)
+        // -------------------------------------------------------------
+        GameObject logoContainer = new GameObject("LogoContainer");
+        logoContainer.transform.SetParent(panel.transform, false);
+        RectTransform logoRect = logoContainer.AddComponent<RectTransform>();
+        logoRect.anchoredPosition = new Vector2(0, 530);
+        logoRect.sizeDelta = new Vector2(900, 240);
 
-        CreateUIText(endlessCard, "ModeTitle", "ENDLESS MODE", new Vector2(-160, 30), new Vector2(550, 50), 36, new Color(0.18f, 0.8f, 0.44f), TextAlignmentOptions.Left);
-        CreateUIText(endlessCard, "ModeSubtitle", "Unlimited drops • Infinite Highscore Chase", new Vector2(-160, -20), new Vector2(550, 45), 20, new Color(0.7f, 0.85f, 0.75f), TextAlignmentOptions.Left);
+        // Title Main Banner / Text
+        TMP_Text mainTitle = CreateUIText(logoContainer, "TitleText", "BALL MERGE", new Vector2(0, 35), new Vector2(850, 110), 82, new Color(1.0f, 0.85f, 0.15f), TextAlignmentOptions.Center);
+        mainTitle.fontStyle = FontStyles.Bold;
 
-        Button playEndless = CreateUIButton(endlessCard, "PlayEndlessButton", "PLAY NOW", new Vector2(270, 0), new Vector2(300, 85), new Color(0.18f, 0.8f, 0.44f), Color.white);
+        // Subtitle Pill
+        GameObject subPill = CreateUICard(logoContainer, "SubtitlePill", new Vector2(0, -42), new Vector2(360, 48), new Color(0.12f, 0.25f, 0.45f, 0.95f), s_frameCyan);
+        TMP_Text subTitle = CreateUIText(subPill, "SubtitleText", "2D  PHYSICS  PUZZLE", Vector2.zero, new Vector2(360, 48), 22, new Color(0.35f, 0.92f, 1.0f), TextAlignmentOptions.Center);
+        subTitle.fontStyle = FontStyles.Bold;
 
-        // 4. Play Mode Card 2: Level 1 Campaign Card (Y = -30)
-        GameObject levelCard = CreateUICard(panel.gameObject, "LevelModeCard", new Vector2(0, -30), new Vector2(940, 200), new Color(0.1f, 0.18f, 0.28f, 0.95f));
+        // Cute Floating Decorative Balls
+        List<Transform> decorBalls = new List<Transform>();
 
-        CreateUIText(levelCard, "ModeTitle", "50 CAMPAIGN LEVELS", new Vector2(-180, 30), new Vector2(500, 50), 34, new Color(0.2f, 0.6f, 0.86f), TextAlignmentOptions.Left);
-        CreateUIText(levelCard, "ModeSubtitle", "Target scores • Star Ratings • 50+ Levels", new Vector2(-180, -20), new Vector2(500, 45), 20, new Color(0.7f, 0.85f, 1.0f), TextAlignmentOptions.Left);
+        // Ball 1 (Cherry Red - Left)
+        GameObject ball1 = CreateDecorBall(logoContainer, "DecorBall_Cherry", new Vector2(-310, 15), 72f, new Color(1.0f, 0.22f, 0.28f));
+        decorBalls.Add(ball1.transform);
 
-        Button levelMapButton = CreateUIButton(levelCard, "LevelMapButton", "🗺 MAP", new Vector2(165, 0), new Vector2(170, 85), new Color(0.2f, 0.6f, 0.86f), Color.white);
-        Button playLevel1 = CreateUIButton(levelCard, "PlayLevel1Button", "PLAY 1", new Vector2(350, 0), new Vector2(150, 85), new Color(0.18f, 0.8f, 0.44f), Color.white);
+        // Ball 2 (Melon Green - Right)
+        GameObject ball2 = CreateDecorBall(logoContainer, "DecorBall_Melon", new Vector2(320, -10), 92f, new Color(0.18f, 0.85f, 0.45f));
+        decorBalls.Add(ball2.transform);
 
-        // 5. Customization Shop Cards Row (Y = -270)
-        GameObject kitsCard = CreateUICard(panel.gameObject, "KitsCard", new Vector2(-245, -270), new Vector2(450, 200), new Color(0.2f, 0.14f, 0.26f, 0.95f));
-        CreateUIText(kitsCard, "KitsTitle", "BALL KITS", new Vector2(0, 45), new Vector2(400, 50), 32, new Color(0.75f, 0.45f, 0.9f), TextAlignmentOptions.Center);
-        CreateUIText(kitsCard, "KitsSub", "Fruits • Ocean • Sky", new Vector2(0, 5), new Vector2(400, 35), 20, Color.gray, TextAlignmentOptions.Center);
-        Button ballKits = CreateUIButton(kitsCard, "BallKitsButton", "OPEN SHOP", new Vector2(0, -50), new Vector2(380, 60), new Color(0.61f, 0.35f, 0.71f), Color.white);
+        // Ball 3 (Plum Purple - Upper Right)
+        GameObject ball3 = CreateDecorBall(logoContainer, "DecorBall_Plum", new Vector2(250, 75), 62f, new Color(0.68f, 0.32f, 0.92f));
+        decorBalls.Add(ball3.transform);
 
-        GameObject themesCard = CreateUICard(panel.gameObject, "ThemesCard", new Vector2(245, -270), new Vector2(450, 200), new Color(0.26f, 0.16f, 0.12f, 0.95f));
-        CreateUIText(themesCard, "ThemesTitle", "THEMES", new Vector2(0, 45), new Vector2(400, 50), 32, new Color(0.95f, 0.6f, 0.2f), TextAlignmentOptions.Center);
-        CreateUIText(themesCard, "ThemesSub", "Visual Environments", new Vector2(0, 5), new Vector2(400, 35), 20, Color.gray, TextAlignmentOptions.Center);
-        Button themes = CreateUIButton(themesCard, "ThemesButton", "OPEN SHOP", new Vector2(0, -50), new Vector2(380, 60), new Color(0.9f, 0.49f, 0.13f), Color.white);
+        // -------------------------------------------------------------
+        // 4. GIANT HERO "PLAY" BUTTON (Y = 220)
+        // -------------------------------------------------------------
+        GameObject heroPlayBox = new GameObject("HeroPlayContainer");
+        heroPlayBox.transform.SetParent(panel.transform, false);
+        RectTransform heroPlayRect = heroPlayBox.AddComponent<RectTransform>();
+        heroPlayRect.anchoredPosition = new Vector2(0, 220);
+        heroPlayRect.sizeDelta = new Vector2(720, 160);
 
-        // 6. Bottom Navigation Bar (Y = -520)
-        Button settings = CreateUIButton(panel.gameObject, "SettingsButton", "⚙ SETTINGS", new Vector2(-245, -520), new Vector2(450, 85), new Color(0.2f, 0.25f, 0.35f), Color.white);
-        Button quit = CreateUIButton(panel.gameObject, "QuitButton", "✖ QUIT", new Vector2(245, -520), new Vector2(450, 85), new Color(0.85f, 0.25f, 0.2f), Color.white);
+        Button playEndlessBtn = CreateUIButton(heroPlayBox, "PlayEndlessButton", "", Vector2.zero, new Vector2(720, 160), new Color(0.18f, 0.8f, 0.44f), Color.white, s_btnGreen);
 
-        // Auto-wire SerializedObject
+        // Hero Play Button Labels
+        TMP_Text playMainTxt = CreateUIText(playEndlessBtn.gameObject, "PlayTitle", "▶  PLAY NOW", new Vector2(0, 18), new Vector2(680, 75), 54, Color.white, TextAlignmentOptions.Center);
+        playMainTxt.fontStyle = FontStyles.Bold;
+        TMP_Text playSubTxt = CreateUIText(playEndlessBtn.gameObject, "PlaySub", "ENDLESS HIGHSCORE MODE", new Vector2(0, -32), new Vector2(680, 40), 20, new Color(0.85f, 1.0f, 0.85f), TextAlignmentOptions.Center);
+        playSubTxt.fontStyle = FontStyles.Bold;
+
+        // -------------------------------------------------------------
+        // 5. 50 CAMPAIGN LEVELS CARD (Y = -25)
+        // -------------------------------------------------------------
+        GameObject campaignCard = CreateUICard(panel.gameObject, "CampaignCard", new Vector2(0, -25), new Vector2(920, 195), new Color(0.1f, 0.16f, 0.26f, 0.95f), s_frameCyan);
+
+        // Left info
+        TMP_Text campTitle = CreateUIText(campaignCard, "CampTitle", "CAMPAIGN ADVENTURE", new Vector2(-160, 36), new Vector2(500, 50), 32, new Color(0.2f, 0.85f, 1.0f), TextAlignmentOptions.Left);
+        campTitle.fontStyle = FontStyles.Bold;
+
+        TMP_Text campLvlTxt = CreateUIText(campaignCard, "CampaignLevelText", "LEVEL 1", new Vector2(-280, -18), new Vector2(250, 45), 26, new Color(1.0f, 0.85f, 0.2f), TextAlignmentOptions.Left);
+        campLvlTxt.fontStyle = FontStyles.Bold;
+
+        TMP_Text campStarsTxt = CreateUIText(campaignCard, "CampaignStarsText", "STARS: 0 / 150", new Vector2(-80, -18), new Vector2(300, 45), 21, new Color(0.85f, 0.9f, 0.98f), TextAlignmentOptions.Left);
+
+        // Right buttons
+        Button playCampaignBtn = CreateUIButton(campaignCard, "PlayCampaignButton", "PLAY LVL 1", new Vector2(325, 0), new Vector2(230, 85), new Color(0.18f, 0.8f, 0.44f), Color.white, s_btnGreen);
+        TMP_Text playCampaignBtnTxt = playCampaignBtn.GetComponentInChildren<TMP_Text>();
+        if (playCampaignBtnTxt != null) playCampaignBtnTxt.fontSize = 26;
+
+        Button mapBtn = CreateUIButton(campaignCard, "LevelMapButton", "MAP", new Vector2(115, 0), new Vector2(160, 85), new Color(0.2f, 0.6f, 0.86f), Color.white, s_btnYellow);
+        TMP_Text mapBtnTxt = mapBtn.GetComponentInChildren<TMP_Text>();
+        if (mapBtnTxt != null) mapBtnTxt.fontSize = 26;
+
+        // -------------------------------------------------------------
+        // 6. DAILY REWARDS & LUCKY WHEEL BANNER (Y = -245)
+        // -------------------------------------------------------------
+        GameObject dailyCard = CreateUICard(panel.gameObject, "DailyCard", new Vector2(0, -245), new Vector2(920, 145), new Color(0.22f, 0.15f, 0.26f, 0.95f), s_framePurple);
+
+        TMP_Text dailyTitle = CreateUIText(dailyCard, "DailyTitle", "DAILY REWARD & SPIN WHEEL", new Vector2(-140, 22), new Vector2(550, 45), 28, new Color(1.0f, 0.8f, 0.2f), TextAlignmentOptions.Left);
+        dailyTitle.fontStyle = FontStyles.Bold;
+
+        CreateUIText(dailyCard, "DailySub", "Free login streak coins & lucky wheel spin!", new Vector2(-140, -18), new Vector2(550, 35), 20, new Color(0.85f, 0.8f, 0.95f), TextAlignmentOptions.Left);
+
+        Button dailyRewardBtn = CreateUIButton(dailyCard, "DailyRewardButton", "SPIN & CLAIM", new Vector2(320, 0), new Vector2(240, 80), new Color(0.95f, 0.65f, 0.1f), Color.white, s_btnYellow);
+        TMP_Text dailyBtnTxt = dailyRewardBtn.GetComponentInChildren<TMP_Text>();
+        if (dailyBtnTxt != null) dailyBtnTxt.fontSize = 25;
+
+        // Animated Notification Pill Badge on Daily Reward
+        GameObject notifBadge = CreateUICard(dailyCard, "DailyNotificationBadge", new Vector2(420, 36), new Vector2(80, 36), new Color(0.95f, 0.2f, 0.25f), s_btnRed);
+        TMP_Text notifTxt = CreateUIText(notifBadge, "BadgeText", "FREE!", Vector2.zero, new Vector2(80, 36), 18, Color.white, TextAlignmentOptions.Center);
+        notifTxt.fontStyle = FontStyles.Bold;
+
+        // -------------------------------------------------------------
+        // 7. BOTTOM NAVIGATION DOCK (Y = -480)
+        // -------------------------------------------------------------
+        GameObject bottomDock = CreateUICard(panel.gameObject, "BottomDock", new Vector2(0, -480), new Vector2(920, 135), new Color(0.12f, 0.14f, 0.22f, 0.95f), s_frameBlue);
+
+        // 3 App-style action buttons
+        Button ballKitsBtn = CreateUIButton(bottomDock, "BallKitsButton", "BALL KITS\nSKINS SHOP", new Vector2(-295, 0), new Vector2(280, 92), new Color(0.2f, 0.55f, 0.85f), Color.white, s_btnBlue);
+        TMP_Text kitsTxt = ballKitsBtn.GetComponentInChildren<TMP_Text>();
+        if (kitsTxt != null) kitsTxt.fontSize = 22;
+
+        Button themesBtn = CreateUIButton(bottomDock, "ThemesButton", "THEMES\nWORLDS", new Vector2(0, 0), new Vector2(280, 92), new Color(0.2f, 0.55f, 0.85f), Color.white, s_btnBlue);
+        TMP_Text themesTxt = themesBtn.GetComponentInChildren<TMP_Text>();
+        if (themesTxt != null) themesTxt.fontSize = 22;
+
+        Button quitBtn = CreateUIButton(bottomDock, "QuitButton", "QUIT\nGAME", new Vector2(295, 0), new Vector2(280, 92), new Color(0.85f, 0.25f, 0.2f), Color.white, s_btnRed);
+        TMP_Text quitTxt = quitBtn.GetComponentInChildren<TMP_Text>();
+        if (quitTxt != null) quitTxt.fontSize = 22;
+
+        // -------------------------------------------------------------
+        // 8. AUTO-WIRE SERIALIZED OBJECT PROPERTIES
+        // -------------------------------------------------------------
         SerializedObject so = new SerializedObject(panel);
-        SafeSetProperty(so, "playEndlessButton", playEndless);
-        SafeSetProperty(so, "playLevel1Button", playLevel1);
-        SafeSetProperty(so, "levelMapButton", levelMapButton);
-        SafeSetProperty(so, "dailyRewardButton", dailyRewardButton);
-        SafeSetProperty(so, "ballKitsButton", ballKits);
-        SafeSetProperty(so, "themesButton", themes);
-        SafeSetProperty(so, "settingsButton", settings);
-        SafeSetProperty(so, "quitButton", quit);
-        SafeSetProperty(so, "highScoreText", highScore);
+        SafeSetProperty(so, "playEndlessButton", playEndlessBtn);
+        SafeSetProperty(so, "playButtonTransform", heroPlayBox.transform);
+        SafeSetProperty(so, "playLevel1Button", playCampaignBtn);
+        SafeSetProperty(so, "playLevelButtonText", playCampaignBtnTxt);
+        SafeSetProperty(so, "levelMapButton", mapBtn);
+        SafeSetProperty(so, "dailyRewardButton", dailyRewardBtn);
+        SafeSetProperty(so, "dailyNotificationBadge", notifBadge);
+        SafeSetProperty(so, "dailyBadgeText", notifTxt);
+        SafeSetProperty(so, "ballKitsButton", ballKitsBtn);
+        SafeSetProperty(so, "themesButton", themesBtn);
+        SafeSetProperty(so, "settingsButton", settingsBtn);
+        SafeSetProperty(so, "quitButton", quitBtn);
+        SafeSetProperty(so, "highScoreText", highScoreTxt);
         SafeSetProperty(so, "coinBalanceText", coinBalanceText);
+        SafeSetProperty(so, "campaignLevelText", campLvlTxt);
+        SafeSetProperty(so, "campaignStarsText", campStarsTxt);
+        SafeSetProperty(so, "logoContainer", logoContainer.transform);
+        SafeSetListProperty(so, "decorativeBalls", decorBalls);
         so.ApplyModifiedProperties();
     }
 
@@ -1130,6 +1290,48 @@ public static class BallMergeAssetCreator
         {
             Debug.LogWarning($"[BallMergeAssetCreator] Property '{propertyName}' not found on {so.targetObject.GetType().Name}");
         }
+    }
+
+    private static void SafeSetListProperty(SerializedObject so, string propertyName, List<Transform> items)
+    {
+        SerializedProperty prop = so.FindProperty(propertyName);
+        if (prop != null && prop.isArray)
+        {
+            prop.ClearArray();
+            for (int i = 0; i < items.Count; i++)
+            {
+                prop.InsertArrayElementAtIndex(i);
+                prop.GetArrayElementAtIndex(i).objectReferenceValue = items[i];
+            }
+        }
+    }
+
+    private static GameObject CreateDecorBall(GameObject parent, string name, Vector2 pos, float diameter, Color color)
+    {
+        GameObject ballObj = new GameObject(name);
+        ballObj.transform.SetParent(parent.transform, false);
+
+        RectTransform rect = ballObj.AddComponent<RectTransform>();
+        rect.anchoredPosition = pos;
+        rect.sizeDelta = new Vector2(diameter, diameter);
+
+        Image img = ballObj.AddComponent<Image>();
+        img.sprite = GetCircleSprite();
+        img.color = color;
+
+        // Cute white specular highlight reflection dot (top-left)
+        GameObject shineObj = new GameObject("Shine");
+        shineObj.transform.SetParent(ballObj.transform, false);
+        RectTransform shineRect = shineObj.AddComponent<RectTransform>();
+        float shineSize = diameter * 0.28f;
+        shineRect.anchoredPosition = new Vector2(-diameter * 0.18f, diameter * 0.18f);
+        shineRect.sizeDelta = new Vector2(shineSize, shineSize);
+
+        Image shineImg = shineObj.AddComponent<Image>();
+        shineImg.sprite = GetCircleSprite();
+        shineImg.color = new Color(1f, 1f, 1f, 0.65f);
+
+        return ballObj;
     }
 
     #region UGUI Helper Methods

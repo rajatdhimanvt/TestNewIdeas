@@ -289,10 +289,14 @@ public class BallDropper : MonoBehaviour
         float fallbackBottomY = -4f;
         float endY = fallbackBottomY;
 
-        RaycastHit2D hit = Physics2D.CircleCast(startPoint, ballRadius * 0.9f, Vector2.down, 14f);
-        if (hit.collider != null && !hit.collider.isTrigger)
+        RaycastHit2D[] hits = Physics2D.CircleCastAll(startPoint, ballRadius * 0.9f, Vector2.down, 14f);
+        for (int i = 0; i < hits.Length; i++)
         {
-            endY = hit.point.y;
+            Collider2D col = hits[i].collider;
+            if (col == null || col.isTrigger) continue;
+            if (col.GetComponentInParent<Ball>() == currentBall) continue;
+            endY = hits[i].point.y;
+            break;
         }
 
         aimLineRenderer.enabled = true;

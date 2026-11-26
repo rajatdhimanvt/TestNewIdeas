@@ -28,9 +28,23 @@ public class BallMergeManager : Singleton<BallMergeManager>
     public int ActiveMergeCount => activeMergeCount;
     public int CurrentComboCount => currentComboCount;
 
+    public Sprite GetBallDisplaySprite()
+    {
+        if (ballPrefab == null) return null;
+        SpriteRenderer sr = ballPrefab.GetComponent<SpriteRenderer>();
+        if (sr == null) sr = ballPrefab.GetComponentInChildren<SpriteRenderer>();
+        return sr != null ? sr.sprite : null;
+    }
+
     protected override void Awake()
     {
         base.Awake();
+#if UNITY_EDITOR
+        if (ballPrefab == null)
+        {
+            ballPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Game/Prefab/Slime ball Prefabs/Ball jelly.prefab");
+        }
+#endif
         if (DependencyManager.HasInstance)
         {
             DependencyManager.Instance.Register(this);
@@ -58,19 +72,15 @@ public class BallMergeManager : Singleton<BallMergeManager>
     {
         if (ballA == null || ballB == null) return;
 
-        Vector3 midpoint = (ballA.transform.position + ballB.transform.position) * 0.5f;
+        Vector3 midpoint = (ballA.GetWorldCenter() + ballB.GetWorldCenter()) * 0.5f;
         BallDataSO currentTier = ballA.Data;
         int tokenAtStart = mergeSessionToken;
         bool handled = false;
         activeMergeCount++;
 
         // Animate balls shrinking into midpoint
-        ballA.transform.DOMove(midpoint, mergeAnimationDuration).SetLink(ballA.gameObject);
-        ballA.transform.DOScale(Vector3.zero, mergeAnimationDuration).SetLink(ballA.gameObject);
-
-        ballB.transform.DOMove(midpoint, mergeAnimationDuration).SetLink(ballB.gameObject);
-        ballB.transform.DOScale(Vector3.zero, mergeAnimationDuration)
-            .SetLink(ballB.gameObject)
+        ballA.AnimateMergeInto(midpoint, mergeAnimationDuration);
+        ballB.AnimateMergeInto(midpoint, mergeAnimationDuration)
             .OnComplete(() =>
             {
                 if (handled) return;
@@ -118,13 +128,21 @@ public class BallMergeManager : Singleton<BallMergeManager>
             Ball newBall = InstantiateBall(nextTier, spawnPosition);
             newBall.Drop();
 
-            // Pop bounce animation using DOTween
-            float targetDiameter = nextTier.radius * 2f;
-            newBall.transform.localScale = Vector3.one * (targetDiameter * 0.5f);
-            newBall.transform.DOScale(targetDiameter, 0.2f).SetEase(Ease.OutBack).SetLink(newBall.gameObject);
+            // Pop bounce animation (physical spring pulse for softbodies, scale punch for rigid balls)
+            float targetScale = newBall.GetTargetScale(nextTier);
+            if (newBall.IsSoftBodyRig)
+            {
+                newBall.transform.localScale = Vector3.one * targetScale;
+                newBall.TriggerJellyPopImpulse(1f);
+            }
+            else
+            {
+                newBall.transform.localScale = Vector3.one * (targetScale * 0.5f);
+                newBall.transform.DOScale(targetScale, 0.2f).SetEase(Ease.OutBack).SetLink(newBall.gameObject);
+            }
 
             // Trigger score, block merge-shockwave, & pitched audio events
-            GameEvents.OnScoreChanged?.Invoke(nextTier.scoreValue);
+            GameEvents.OnScoreAdded?.Invoke(nextTier.scoreValue);
             GameEvents.OnScoreAddedAtPosition?.Invoke(nextTier.scoreValue, spawnPosition);
             GameEvents.OnBallsMerged?.Invoke(spawnPosition, nextTier.radius, nextTier.tier);
             GameEvents.OnPlaySFXPitched?.Invoke(mergeSoundKey, comboPitch);
@@ -137,7 +155,7 @@ public class BallMergeManager : Singleton<BallMergeManager>
             int tierVal = currentTier != null ? currentTier.tier + 1 : 6;
 
             Debug.Log("[BallMergeManager] Max tier merged!");
-            GameEvents.OnScoreChanged?.Invoke(jackpotScore);
+            GameEvents.OnScoreAdded?.Invoke(jackpotScore);
             GameEvents.OnScoreAddedAtPosition?.Invoke(jackpotScore, spawnPosition);
             GameEvents.OnBallsMerged?.Invoke(spawnPosition, blastRadius, tierVal);
             GameEvents.OnPlaySFXPitched?.Invoke(mergeSoundKey, comboPitch);
@@ -174,6 +192,10 @@ public class BallMergeManager : Singleton<BallMergeManager>
         }
 
         Ball ballComponent = obj.GetComponent<Ball>();
+        if (ballComponent == null)
+        {
+            ballComponent = obj.AddComponent<Ball>();
+        }
         ballComponent.Initialize(data);
         return ballComponent;
     }

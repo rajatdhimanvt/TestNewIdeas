@@ -28,6 +28,7 @@ public class GameplayController : Singleton<GameplayController>
     [SerializeField] private bool levelCompleted = false;
 
     private Coroutine outOfMovesCoroutine;
+    private LevelDataSO runtimeFallbackLevel;
 
     public int CurrentScore => currentScore;
     public int HighScore => highScore;
@@ -147,7 +148,7 @@ public class GameplayController : Singleton<GameplayController>
     {
         GameEvents.OnGameStateChanged += HandleGameStateChanged;
         GameEvents.OnGamePaused += HandleGamePaused;
-        GameEvents.OnScoreChanged += HandleScoreAdded;
+        GameEvents.OnScoreAdded += HandleScoreAdded;
         GameEvents.OnBallDropped += HandleBallDropped;
         GameEvents.OnBonusDropsEarned += HandleBonusDropsEarned;
     }
@@ -156,7 +157,7 @@ public class GameplayController : Singleton<GameplayController>
     {
         GameEvents.OnGameStateChanged -= HandleGameStateChanged;
         GameEvents.OnGamePaused -= HandleGamePaused;
-        GameEvents.OnScoreChanged -= HandleScoreAdded;
+        GameEvents.OnScoreAdded -= HandleScoreAdded;
         GameEvents.OnBallDropped -= HandleBallDropped;
         GameEvents.OnBonusDropsEarned -= HandleBonusDropsEarned;
     }
@@ -237,6 +238,31 @@ public class GameplayController : Singleton<GameplayController>
         }
     }
 
+    private LevelDataSO GetOrCreateRuntimeFallbackLevel(LevelDataSO template)
+    {
+        if (runtimeFallbackLevel == null)
+        {
+            runtimeFallbackLevel = ScriptableObject.CreateInstance<LevelDataSO>();
+            runtimeFallbackLevel.name = "RuntimeFallbackLevel";
+        }
+
+        if (template != null && template != runtimeFallbackLevel)
+        {
+            runtimeFallbackLevel.dropCooldown = template.dropCooldown;
+            runtimeFallbackLevel.dropHeight = template.dropHeight;
+            runtimeFallbackLevel.containerWidth = template.containerWidth;
+            runtimeFallbackLevel.containerHeight = template.containerHeight;
+            runtimeFallbackLevel.wallThickness = template.wallThickness;
+            runtimeFallbackLevel.defaultKit = template.defaultKit;
+            runtimeFallbackLevel.allTiers = template.allTiers != null ? new System.Collections.Generic.List<BallDataSO>(template.allTiers) : new System.Collections.Generic.List<BallDataSO>();
+            runtimeFallbackLevel.droppableTiers = template.droppableTiers != null ? new System.Collections.Generic.List<BallDataSO>(template.droppableTiers) : new System.Collections.Generic.List<BallDataSO>();
+            runtimeFallbackLevel.dangerLineY = template.dangerLineY;
+            runtimeFallbackLevel.dangerTimeLimit = template.dangerTimeLimit;
+        }
+
+        return runtimeFallbackLevel;
+    }
+
     public void StartLevelMode(int levelNum)
     {
         LevelDatabaseSO db = LevelDatabaseSO.LoadDefault();
@@ -248,17 +274,16 @@ public class GameplayController : Singleton<GameplayController>
         }
         else
         {
-            if (levelData == null)
-            {
-                levelData = ScriptableObject.CreateInstance<LevelDataSO>();
-            }
-
-            levelData.gameMode = GameMode.Level;
-            levelData.levelNumber = levelNum;
-            levelData.winCondition = LevelWinCondition.TargetScore;
-            levelData.targetScore = 300 + (levelNum * 150);
-            levelData.maxDrops = Mathf.Max(15, 35 - (levelNum / 5));
-            levelData.blocks?.Clear();
+            LevelDataSO fallback = GetOrCreateRuntimeFallbackLevel(levelData);
+            fallback.gameMode = GameMode.Level;
+            fallback.levelNumber = levelNum;
+            fallback.levelName = $"Level {levelNum}";
+            fallback.winCondition = LevelWinCondition.TargetScore;
+            // Balanced for classic ball tier scores (2, 4, 8, 16, 32, 64) within drop budget
+            fallback.targetScore = Mathf.Min(420, 80 + (levelNum * 15));
+            fallback.maxDrops = Mathf.Max(22, 34 - (levelNum / 10));
+            fallback.blocks?.Clear();
+            levelData = fallback;
         }
 
         InitializeLevel(levelData);
@@ -266,12 +291,12 @@ public class GameplayController : Singleton<GameplayController>
 
     public void StartEndlessMode()
     {
-        if (levelData == null)
-        {
-            levelData = ScriptableObject.CreateInstance<LevelDataSO>();
-        }
-
-        levelData.gameMode = GameMode.Endless;
+        LevelDataSO fallback = GetOrCreateRuntimeFallbackLevel(levelData);
+        fallback.gameMode = GameMode.Endless;
+        fallback.levelNumber = 0;
+        fallback.maxDrops = 0;
+        fallback.blocks?.Clear();
+        levelData = fallback;
         InitializeLevel(levelData);
     }
 
@@ -280,6 +305,7 @@ public class GameplayController : Singleton<GameplayController>
         if (!isSessionActive) return;
 
         currentScore += points;
+        GameEvents.OnScoreChanged?.Invoke(currentScore);
 
         if (PlayerDataManager.HasInstance)
         {

@@ -232,10 +232,10 @@ public class DestructibleBlock : MonoBehaviour
             Collider2D col = magnetOverlapBuffer[i];
             if (col == null) continue;
 
-            Ball ball = col.GetComponent<Ball>();
+            Ball ball = col.GetComponentInParent<Ball>();
             if (ball == null || !ball.IsDropped || ball.IsMerging || ball.Rigidbody == null) continue;
 
-            Vector2 toMagnet = (Vector2)transform.position - (Vector2)ball.transform.position;
+            Vector2 toMagnet = (Vector2)transform.position - (Vector2)ball.GetWorldCenter();
             float dist = toMagnet.magnitude;
             if (dist < 0.08f) continue;
 
@@ -561,7 +561,7 @@ public class DestructibleBlock : MonoBehaviour
         int rewardScore = definition != null ? definition.scoreReward : 50;
         if (rewardScore > 0)
         {
-            GameEvents.OnScoreChanged?.Invoke(rewardScore);
+            GameEvents.OnScoreAdded?.Invoke(rewardScore);
             GameEvents.OnScoreAddedAtPosition?.Invoke(rewardScore, pos);
         }
 
@@ -616,12 +616,12 @@ public class DestructibleBlock : MonoBehaviour
     {
         if (isDestroyed) return;
 
-        Ball ball = collision.gameObject.GetComponent<Ball>();
+        Ball ball = collision.gameObject.GetComponentInParent<Ball>();
         if (ball == null || !ball.IsDropped || ball.IsMerging) return;
 
         if (behaviorType == BlockBehaviorType.BumperPad && ball.Rigidbody != null)
         {
-            Vector2 pushDir = ((Vector2)ball.transform.position - (Vector2)transform.position).normalized;
+            Vector2 pushDir = ((Vector2)ball.GetWorldCenter() - (Vector2)transform.position).normalized;
             if (pushDir.sqrMagnitude < 0.01f) pushDir = Vector2.up;
             ball.Rigidbody.linearVelocity = pushDir * bumperImpulse;
 
@@ -645,7 +645,7 @@ public class DestructibleBlock : MonoBehaviour
     {
         if (isDestroyed || behaviorType != BlockBehaviorType.PortalEntry) return;
 
-        Ball ball = other.GetComponent<Ball>();
+        Ball ball = other.GetComponentInParent<Ball>();
         if (ball != null && ball.CanUsePortal() && LevelBlockManager.HasInstance)
         {
             LevelBlockManager.Instance.TryTeleportBall(ball, this);

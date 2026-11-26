@@ -275,18 +275,19 @@ public class LevelBlockManager : Singleton<LevelBlockManager>
         BlockRuntimeVisuals.SpawnDebrisBurst(entryPortal.transform.position, new Color(0.2f, 0.85f, 1f), count: 8, speed: 2.5f, scale: 0.1f);
 
         Vector3 destPos = exitPortal.transform.position;
-        ball.transform.position = new Vector3(destPos.x, destPos.y, ball.transform.position.z);
+        ball.TeleportTo(destPos);
 
-        if (ball.Rigidbody != null)
+        float targetScale = ball.Data != null ? ball.GetTargetScale(ball.Data) : ball.transform.localScale.x;
+        if (ball.IsSoftBodyRig)
         {
-            Vector2 vel = ball.Rigidbody.linearVelocity;
-            vel.y = Mathf.Min(vel.y, -2.2f);
-            ball.Rigidbody.linearVelocity = vel;
+            ball.transform.localScale = Vector3.one * targetScale;
+            ball.TriggerJellyPopImpulse(0.85f);
         }
-
-        float targetDiameter = ball.Data != null ? ball.Data.radius * 2f : ball.transform.localScale.x;
-        ball.transform.localScale = Vector3.one * (targetDiameter * 0.45f);
-        ball.transform.DOScale(targetDiameter, 0.22f).SetEase(Ease.OutBack).SetLink(ball.gameObject);
+        else
+        {
+            ball.transform.localScale = Vector3.one * (targetScale * 0.45f);
+            ball.transform.DOScale(targetScale, 0.22f).SetEase(Ease.OutBack).SetLink(ball.gameObject);
+        }
 
         exitPortal.PlayPortalPulse(new Color(1f, 0.45f, 0.92f, 0.9f));
         BlockRuntimeVisuals.SpawnDebrisBurst(destPos, new Color(1f, 0.45f, 0.92f), count: 10, speed: 3.0f, scale: 0.11f);

@@ -343,7 +343,12 @@ public class BlockTestingController : MonoBehaviour
         if (nextBallImage != null)
         {
             nextBallImage.color = next.ballColor;
-            nextBallImage.sprite = next.ballSprite != null ? next.ballSprite : GetFallbackCircleSprite();
+            Sprite previewSprite = next.ballSprite;
+            if (previewSprite == null && BallMergeManager.HasInstance)
+            {
+                previewSprite = BallMergeManager.Instance.GetBallDisplaySprite();
+            }
+            nextBallImage.sprite = previewSprite != null ? previewSprite : GetFallbackCircleSprite();
             nextBallImage.transform.DOKill();
             nextBallImage.transform.localScale = Vector3.one * 0.65f;
             nextBallImage.transform.DOScale(1f, 0.22f).SetEase(Ease.OutBack).SetLink(nextBallImage.gameObject);

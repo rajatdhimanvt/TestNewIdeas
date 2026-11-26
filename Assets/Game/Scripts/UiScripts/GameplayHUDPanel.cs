@@ -239,9 +239,14 @@ public class GameplayHUDPanel : UIBasePanel
             if (nextBallImage != null)
             {
                 nextBallImage.color = nextData.ballColor;
-                if (nextData.ballSprite != null)
+                Sprite previewSprite = nextData.ballSprite;
+                if (previewSprite == null && BallMergeManager.HasInstance)
                 {
-                    nextBallImage.sprite = nextData.ballSprite;
+                    previewSprite = BallMergeManager.Instance.GetBallDisplaySprite();
+                }
+                if (previewSprite != null)
+                {
+                    nextBallImage.sprite = previewSprite;
                 }
                 nextBallImage.transform.DOKill();
                 nextBallImage.transform.localScale = Vector3.one * 0.65f;

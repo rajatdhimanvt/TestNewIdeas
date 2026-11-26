@@ -36,7 +36,6 @@ namespace RaftRumble
 
         private RaftGameState currentState = RaftGameState.WaitingToStart;
         private List<RaftPlayer> spawnedPlayers = new List<RaftPlayer>();
-        private float trackLength = 40f;
 
         public RaftGameMode Mode => gameMode;
         public RaftGameState State => currentState;
@@ -67,7 +66,7 @@ namespace RaftRumble
         {
             if (raft == null)
             {
-                raft = FindFirstObjectByType<RaftController>();
+                raft = FindAnyObjectByType<RaftController>();
                 if (raft == null)
                 {
                     var raftObj = GameObject.Find("Raft");
@@ -80,7 +79,7 @@ namespace RaftRumble
 
             if (cameraFollow == null)
             {
-                cameraFollow = FindFirstObjectByType<RaftCameraFollow>();
+                cameraFollow = FindAnyObjectByType<RaftCameraFollow>();
                 if (cameraFollow == null && Camera.main != null)
                 {
                     cameraFollow = Camera.main.gameObject.AddComponent<RaftCameraFollow>();
@@ -89,7 +88,7 @@ namespace RaftRumble
 
             if (gameplayUI == null)
             {
-                gameplayUI = FindFirstObjectByType<RaftGameplayUI>();
+                gameplayUI = FindAnyObjectByType<RaftGameplayUI>();
                 if (gameplayUI == null)
                 {
                     gameplayUI = RaftGameplayUI.EnsureUIExists();

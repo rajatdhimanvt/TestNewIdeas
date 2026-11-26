@@ -11,7 +11,8 @@ public static class GameEvents
     public static Action<bool> OnGamePaused;
 
     // Progression / Gameplay Events
-    public static Action<int> OnScoreChanged;
+    public static Action<int> OnScoreAdded; // delta points awarded on merge
+    public static Action<int> OnScoreChanged; // total cumulative session score
     public static Action<int, Vector3> OnScoreAddedAtPosition; // (scorePoints, worldPosition)
     public static Action<int> OnHighScoreChanged;
     public static Action OnBallDropped;
@@ -42,6 +43,7 @@ public static class GameEvents
     {
         OnGameStateChanged = null;
         OnGamePaused = null;
+        OnScoreAdded = null;
         OnScoreChanged = null;
         OnScoreAddedAtPosition = null;
         OnHighScoreChanged = null;
