@@ -5,30 +5,32 @@ using UnityEngine.InputSystem;
 namespace GeometryBoxMaze
 {
     /// <summary>
-    /// Reads mobile accelerometer / gravity tilt with comfort calibration, smoothing,
-    /// sensitivity scaling, and full Unity Editor keyboard (WASD / Arrow) + drag simulation.
+    /// Reads Android/iOS accelerometer tilt (via both legacy Input.acceleration and InputSystem
+    /// 60Hz Accelerometer/GravitySensor) with auto-calibration on first sample, comfort calibration,
+    /// focus-resume sensor re-enabling, plus Unity Editor Keyboard & Touchscreen drag fallback.
     /// </summary>
     public class GeometryMazeTiltInput : MonoBehaviour
     {
         private const string PREF_SENSITIVITY = "GeometryMaze_TiltSensitivity";
-        private const float DEFAULT_SENSITIVITY = 1.15f;
+        private const float DEFAULT_SENSITIVITY = 1.25f;
 
         [Header("Tilt Tuning")]
-        [SerializeField] private float maxTiltDegrees = 28f;
-        [SerializeField] private float deadZone = 0.03f;
-        [SerializeField] private float smoothingSpeed = 14f;
+        [SerializeField] private float maxTiltDegrees = 24f;
+        [SerializeField] private float deadZone = 0.025f;
+        [SerializeField] private float smoothingSpeed = 15f;
         [SerializeField] private float keyboardRampSpeed = 5.5f;
 
         private Vector3 neutralAccel = new Vector3(0f, -0.45f, -0.89f); // ~27 deg comfortable handheld angle
+        private bool hasInitialNeutralSample;
         private Vector2 filteredTilt;
         private Vector2 keyboardTilt;
         private Vector2 dragTilt;
         private Vector2 dragStartScreenPos;
         private bool isDraggingTilt;
         private float sensitivity = DEFAULT_SENSITIVITY;
-        private bool sensorInitialized;
 
         public Vector2 CurrentTilt => filteredTilt;
+        public Vector3 LastRawAcceleration { get; private set; }
         public float Sensitivity
         {
             get => sensitivity;
@@ -48,21 +50,48 @@ namespace GeometryBoxMaze
 
         private void OnEnable()
         {
-            TryEnableSensors();
+            EnsureMobileSensorsEnabled(forceToggleGyro: true);
         }
 
-        private void TryEnableSensors()
+        private void OnApplicationFocus(bool hasFocus)
         {
-            if (sensorInitialized) return;
-            sensorInitialized = true;
-
-            if (Accelerometer.current != null && !Accelerometer.current.enabled)
+            if (hasFocus)
             {
-                InputSystem.EnableDevice(Accelerometer.current);
+                // Android sensors often freeze on resume unless re-enabled explicitly
+                EnsureMobileSensorsEnabled(forceToggleGyro: true);
             }
-            if (GravitySensor.current != null && !GravitySensor.current.enabled)
+        }
+
+        private void EnsureMobileSensorsEnabled(bool forceToggleGyro)
+        {
+            if (Accelerometer.current != null)
             {
-                InputSystem.EnableDevice(GravitySensor.current);
+                if (!Accelerometer.current.enabled)
+                {
+                    InputSystem.EnableDevice(Accelerometer.current);
+                }
+                Accelerometer.current.samplingFrequency = 60f;
+            }
+
+            if (GravitySensor.current != null)
+            {
+                if (!GravitySensor.current.enabled)
+                {
+                    InputSystem.EnableDevice(GravitySensor.current);
+                }
+                GravitySensor.current.samplingFrequency = 60f;
+            }
+
+            if (Application.isMobilePlatform && SystemInfo.supportsGyroscope)
+            {
+                if (forceToggleGyro)
+                {
+                    Input.gyro.enabled = false;
+                }
+                if (!Input.gyro.enabled)
+                {
+                    Input.gyro.enabled = true;
+                }
             }
         }
 
@@ -74,6 +103,7 @@ namespace GeometryBoxMaze
             if (TryReadRawAcceleration(out Vector3 raw) && raw.sqrMagnitude > 0.05f)
             {
                 neutralAccel = raw.normalized;
+                hasInitialNeutralSample = true;
             }
             else
             {
@@ -94,18 +124,34 @@ namespace GeometryBoxMaze
 
         private void Update()
         {
+            // Continuously ensure late-registered Android InputSystem sensors get enabled at 60Hz
+            if ((Accelerometer.current != null && !Accelerometer.current.enabled) ||
+                (GravitySensor.current != null && !GravitySensor.current.enabled))
+            {
+                EnsureMobileSensorsEnabled(forceToggleGyro: false);
+            }
+
             Vector2 rawTilt = Vector2.zero;
             IsUsingMobileSensor = false;
 
             if (TryReadRawAcceleration(out Vector3 accel) && accel.sqrMagnitude > 0.05f)
             {
+                LastRawAcceleration = accel;
                 IsUsingMobileSensor = true;
+
+                // Auto-calibrate once to the player's holding angle on the very first stable 1G sample
+                if (!hasInitialNeutralSample && accel.sqrMagnitude > 0.35f)
+                {
+                    neutralAccel = accel.normalized;
+                    hasInitialNeutralSample = true;
+                }
+
                 rawTilt = ComputeRelativeTilt(accel.normalized);
             }
 
-            // Combine keyboard & pointer-drag simulation so testing inside Unity Editor is immediate
+            // Combine keyboard & touch/mouse drag fallback seamlessly
             Vector2 simKeyboard = ReadKeyboardSimulation();
-            Vector2 simDrag = ReadPointerDragSimulation();
+            Vector2 simDrag = ReadPointerOrTouchDrag();
             if (simKeyboard.sqrMagnitude > 0.001f || simDrag.sqrMagnitude > 0.001f)
             {
                 Vector2 combinedSim = simKeyboard + simDrag;
@@ -126,16 +172,18 @@ namespace GeometryBoxMaze
 
         private bool TryReadRawAcceleration(out Vector3 accel)
         {
-            if (GravitySensor.current != null && GravitySensor.current.enabled)
+            // 1. Legacy Input.acceleration (consistent Unity -Z convention + screen-orientation compensated)
+            if (SystemInfo.supportsAccelerometer || Application.isMobilePlatform)
             {
-                Vector3 g = GravitySensor.current.gravity.ReadValue();
-                if (g.sqrMagnitude > 0.05f)
+                Vector3 legacy = Input.acceleration;
+                if (legacy.sqrMagnitude > 0.05f)
                 {
-                    accel = g / 9.81f;
+                    accel = legacy;
                     return true;
                 }
             }
 
+            // 2. New Input System Accelerometer (60Hz)
             if (Accelerometer.current != null && Accelerometer.current.enabled)
             {
                 Vector3 a = Accelerometer.current.acceleration.ReadValue();
@@ -146,12 +194,13 @@ namespace GeometryBoxMaze
                 }
             }
 
-            if (SystemInfo.supportsAccelerometer)
+            // 3. New Input System GravitySensor fallback (scaled m/s^2 -> G)
+            if (GravitySensor.current != null && GravitySensor.current.enabled)
             {
-                Vector3 legacy = Input.acceleration;
-                if (legacy.sqrMagnitude > 0.05f)
+                Vector3 g = GravitySensor.current.gravity.ReadValue();
+                if (g.sqrMagnitude > 0.05f)
                 {
-                    accel = legacy;
+                    accel = g / 9.81f;
                     return true;
                 }
             }
@@ -162,17 +211,22 @@ namespace GeometryBoxMaze
 
         private Vector2 ComputeRelativeTilt(Vector3 accelNorm)
         {
-            // Horizontal tilt (phone tilted left / right)
+            // Roll (tilt left/right)
             float angleXDeg = Mathf.Asin(Mathf.Clamp(accelNorm.x, -1f, 1f)) * Mathf.Rad2Deg
                               - Mathf.Asin(Mathf.Clamp(neutralAccel.x, -1f, 1f)) * Mathf.Rad2Deg;
 
-            // Pitch tilt relative to calibrated neutral holding angle
+            // Pitch (tilt top away/toward user relative to calibrated holding pose)
             Vector2 refYZ = new Vector2(neutralAccel.y, neutralAccel.z);
             Vector2 curYZ = new Vector2(accelNorm.y, accelNorm.z);
             float angleYDeg = 0f;
             if (refYZ.sqrMagnitude > 0.02f && curYZ.sqrMagnitude > 0.02f)
             {
                 angleYDeg = Vector2.SignedAngle(refYZ.normalized, curYZ.normalized);
+                // If hardware reports +Z when face up instead of -Z, invert pitch sign so top-down stays +Y
+                if (neutralAccel.z > 0.1f)
+                {
+                    angleYDeg = -angleYDeg;
+                }
             }
 
             float nx = Mathf.Clamp(angleXDeg / Mathf.Max(5f, maxTiltDegrees), -1.2f, 1.2f);
@@ -201,11 +255,39 @@ namespace GeometryBoxMaze
             return keyboardTilt;
         }
 
-        private Vector2 ReadPointerDragSimulation()
+        private Vector2 ReadPointerOrTouchDrag()
         {
-            if (Mouse.current == null || Application.isMobilePlatform && IsUsingMobileSensor)
+            // Touchscreen drag fallback works even on Android emulators / sensor-less phones
+            if (Touchscreen.current != null && Touchscreen.current.primaryTouch.press.isPressed)
             {
-                dragTilt = Vector2.zero;
+                var touch = Touchscreen.current.primaryTouch;
+                Vector2 touchPos = touch.position.ReadValue();
+                if (touch.press.wasPressedThisFrame)
+                {
+                    int touchId = touch.touchId.ReadValue();
+                    bool overUi = EventSystem.current != null &&
+                                  (EventSystem.current.IsPointerOverGameObject(touchId) || EventSystem.current.IsPointerOverGameObject());
+                    if (!overUi)
+                    {
+                        isDraggingTilt = true;
+                        dragStartScreenPos = touchPos;
+                    }
+                    else
+                    {
+                        isDraggingTilt = false;
+                    }
+                }
+                else if (isDraggingTilt)
+                {
+                    dragTilt = Vector2.ClampMagnitude((touchPos - dragStartScreenPos) / 140f, 1f);
+                }
+                return dragTilt;
+            }
+
+            if (Mouse.current == null)
+            {
+                isDraggingTilt = false;
+                dragTilt = Vector2.MoveTowards(dragTilt, Vector2.zero, keyboardRampSpeed * 2f * Time.unscaledDeltaTime);
                 return dragTilt;
             }
 

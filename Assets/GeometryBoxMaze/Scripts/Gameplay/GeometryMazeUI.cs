@@ -294,11 +294,11 @@ namespace GeometryBoxMaze
             if (hudControlsHintText == null) return;
             if (tiltInput != null && tiltInput.IsUsingMobileSensor)
             {
-                hudControlsHintText.text = "TILT PHONE TO GUIDE BALL  •  CALIBRATE SETTLES NEUTRAL";
+                hudControlsHintText.text = "TILT PHONE TO ROLL  •  CALIBRATE SETTLES ANGLE  •  DRAG ALSO WORKS";
             }
             else
             {
-                hudControlsHintText.text = "TILT ON MOBILE  |  WASD / ARROWS / MOUSE DRAG IN EDITOR  |  R = RETRY";
+                hudControlsHintText.text = "DRAG OR WASD / ARROWS TO TILT  •  CHECK DEVICE SENSOR  •  R = RETRY";
             }
         }
 

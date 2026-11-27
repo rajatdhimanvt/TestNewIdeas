@@ -13,9 +13,9 @@ namespace GeometryBoxMaze
     public class GeometryMazeBallController : MonoBehaviour
     {
         [Header("Physics Tuning")]
-        [SerializeField] private float accelerationStrength = 30f;
-        [SerializeField] private float maxSpeed = 8.8f;
-        [SerializeField] private float linearDrag = 1.6f;
+        [SerializeField] private float accelerationStrength = 32f;
+        [SerializeField] private float maxSpeed = 9.0f;
+        [SerializeField] private float linearDrag = 1.45f;
 
         [Header("Visuals")]
         [SerializeField] private Transform shadowTransform;
