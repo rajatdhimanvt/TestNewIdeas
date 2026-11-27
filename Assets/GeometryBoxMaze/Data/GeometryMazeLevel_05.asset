@@ -1,0 +1,161 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a9bf9b0961bbac54499c0130ee412d10, type: 3}
+  m_Name: GeometryMazeLevel_05
+  m_EditorClassIdentifier: 
+  levelNumber: 5
+  levelName: Master Box
+  difficultyLabel: EXPERT
+  modeLabel: 7x11 PRO
+  trayInnerSize: {x: 7.6, y: 11.6}
+  trayColor: {r: 0.76, g: 0.87, b: 0.98, a: 1}
+  outerFrameColor: {r: 0.14, g: 0.34, b: 0.62, a: 1}
+  wallColor: {r: 0.98, g: 0.98, b: 1, a: 1}
+  threeStarTime: 36
+  twoStarTime: 62
+  timeTrialLimit: 0
+  startPosition: {x: -3.2571428, y: -5.2727275}
+  goalPosition: {x: -0.00000017881393, y: 5.272728}
+  ballRadius: 0.23
+  walls:
+  - position: {x: -2.7142859, y: 0.00000017881393}
+    size: {x: 0.16, y: 1.2145455}
+    rotationDeg: 0
+  - position: {x: -2.7142859, y: 2.636364}
+    size: {x: 0.16, y: 2.2690911}
+    rotationDeg: 0
+  - position: {x: -1.6285715, y: -2.1090908}
+    size: {x: 0.16, y: 3.3236365}
+    rotationDeg: 0
+  - position: {x: -1.6285715, y: 1.0545456}
+    size: {x: 0.16, y: 1.2145455}
+    rotationDeg: 0
+  - position: {x: -1.6285715, y: 3.6909094}
+    size: {x: 0.16, y: 2.2690911}
+    rotationDeg: 0
+  - position: {x: -0.5428573, y: -3.1636364}
+    size: {x: 0.16, y: 3.3236365}
+    rotationDeg: 0
+  - position: {x: -0.5428573, y: 2.636364}
+    size: {x: 0.16, y: 2.2690911}
+    rotationDeg: 0
+  - position: {x: 0.54285693, y: -5.2727275}
+    size: {x: 0.16, y: 1.2145455}
+    rotationDeg: 0
+  - position: {x: 0.54285693, y: -1.5818181}
+    size: {x: 0.16, y: 2.2690911}
+    rotationDeg: 0
+  - position: {x: 0.54285693, y: 5.272728}
+    size: {x: 0.16, y: 1.2145455}
+    rotationDeg: 0
+  - position: {x: 1.6285712, y: -1.0545454}
+    size: {x: 0.16, y: 1.2145455}
+    rotationDeg: 0
+  - position: {x: 1.6285712, y: 1.5818185}
+    size: {x: 0.16, y: 2.2690911}
+    rotationDeg: 0
+  - position: {x: 2.7142854, y: -3.1636364}
+    size: {x: 0.16, y: 3.3236365}
+    rotationDeg: 0
+  - position: {x: 2.7142854, y: 0.00000017881393}
+    size: {x: 0.16, y: 1.2145455}
+    rotationDeg: 0
+  - position: {x: 2.7142854, y: 3.6909094}
+    size: {x: 0.16, y: 2.2690911}
+    rotationDeg: 0
+  - position: {x: -2.1714287, y: -4.745455}
+    size: {x: 3.4171426, y: 0.16}
+    rotationDeg: 0
+  - position: {x: 1.6285712, y: -4.745455}
+    size: {x: 2.3314285, y: 0.16}
+    rotationDeg: 0
+  - position: {x: -2.1714287, y: -3.6909091}
+    size: {x: 1.2457142, y: 0.16}
+    rotationDeg: 0
+  - position: {x: 0.54285693, y: -3.6909091}
+    size: {x: 2.3314285, y: 0.16}
+    rotationDeg: 0
+  - position: {x: -3.2571428, y: -2.6363635}
+    size: {x: 1.2457142, y: 0.16}
+    rotationDeg: 0
+  - position: {x: 1.6285712, y: -2.6363635}
+    size: {x: 2.3314285, y: 0.16}
+    rotationDeg: 0
+  - position: {x: -2.1714287, y: -1.5818181}
+    size: {x: 1.2457142, y: 0.16}
+    rotationDeg: 0
+  - position: {x: -3.2571428, y: -0.5272726}
+    size: {x: 1.2457142, y: 0.16}
+    rotationDeg: 0
+  - position: {x: 2.1714282, y: -0.5272726}
+    size: {x: 1.2457142, y: 0.16}
+    rotationDeg: 0
+  - position: {x: -2.1714287, y: 0.52727294}
+    size: {x: 1.2457142, y: 0.16}
+    rotationDeg: 0
+  - position: {x: 0.54285693, y: 0.52727294}
+    size: {x: 2.3314285, y: 0.16}
+    rotationDeg: 0
+  - position: {x: 3.2571425, y: 0.52727294}
+    size: {x: 1.2457142, y: 0.16}
+    rotationDeg: 0
+  - position: {x: -0.5428573, y: 1.5818185}
+    size: {x: 2.3314285, y: 0.16}
+    rotationDeg: 0
+  - position: {x: 2.1714282, y: 1.5818185}
+    size: {x: 1.2457142, y: 0.16}
+    rotationDeg: 0
+  - position: {x: -2.1714287, y: 2.636364}
+    size: {x: 1.2457142, y: 0.16}
+    rotationDeg: 0
+  - position: {x: 1.0857141, y: 2.636364}
+    size: {x: 1.2457142, y: 0.16}
+    rotationDeg: 0
+  - position: {x: 1.0857141, y: 3.6909094}
+    size: {x: 3.4171426, y: 0.16}
+    rotationDeg: 0
+  - position: {x: -3.2571428, y: 4.745455}
+    size: {x: 1.2457142, y: 0.16}
+    rotationDeg: 0
+  - position: {x: -0.5428573, y: 4.745455}
+    size: {x: 2.3314285, y: 0.16}
+    rotationDeg: 0
+  - position: {x: 2.1714282, y: 4.745455}
+    size: {x: 1.2457142, y: 0.16}
+    rotationDeg: 0
+  holes:
+  - position: {x: -3.2571428, y: -0.1687271}
+    radius: 0.26363638
+  - position: {x: -2.1714287, y: 2.9949093}
+    radius: 0.26363638
+  - position: {x: 0.9169868, y: -5.2727275}
+    radius: 0.26363638
+  obstacles:
+  - isSpinner: 1
+    startPosition: {x: -0.5428573, y: -0.5272726}
+    endPosition: {x: -0.5428573, y: -0.5272726}
+    size: {x: 1.6345456, y: 0.18399999}
+    speed: 62
+  bonusPins:
+  - {x: 2.1714282, y: 4.218182}
+  - {x: -1.0857143, y: 5.272728}
+  - {x: -3.2571428, y: 4.218182}
+  eraserBumpers:
+  - position: {x: 3.2571425, y: 0.14763655}
+    size: {x: 0.65381825, y: 0.23200001}
+    rotationDeg: 28
+    bounceForce: 8.2
+  switchGates:
+  - switchPosition: {x: -3.2571428, y: 5.272728}
+    gatePosition: {x: -0.5428573, y: 5.272728}
+    gateSize: {x: 0.18399999, y: 0.97454554}
+    gateRotationDeg: 90

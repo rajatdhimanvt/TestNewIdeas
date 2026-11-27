@@ -14,6 +14,7 @@ public class LevelSelectionPanel : UIBasePanel
     [SerializeField] private TMP_Text totalStarsText;
     [SerializeField] private TMP_Text coinBalanceText;
     [SerializeField] private Button backButton;
+    [SerializeField] private Button jumpToCurrentButton;
 
     [Header("Grid Container")]
     [SerializeField] private Transform levelGridContainer;
@@ -26,6 +27,11 @@ public class LevelSelectionPanel : UIBasePanel
         if (backButton != null)
         {
             backButton.onClick.AddListener(OnBackClicked);
+        }
+
+        if (jumpToCurrentButton != null)
+        {
+            jumpToCurrentButton.onClick.AddListener(OnJumpToCurrentClicked);
         }
 
         PlayerDataManager.OnCoinsChanged += UpdateCoinDisplay;
@@ -60,7 +66,7 @@ public class LevelSelectionPanel : UIBasePanel
         if (PlayerDataManager.HasInstance && totalStarsText != null)
         {
             int earned = PlayerDataManager.Instance.GetTotalStarsEarned(TOTAL_LEVELS);
-            totalStarsText.text = $"⭐ STARS: {earned} / {TOTAL_LEVELS * 3}";
+            totalStarsText.text = $"STARS: {earned} / {TOTAL_LEVELS * 3}";
         }
 
         EnsureAdventureMap();
@@ -126,7 +132,7 @@ public class LevelSelectionPanel : UIBasePanel
     {
         if (coinBalanceText != null)
         {
-            coinBalanceText.text = $"🪙 {newBalance:N0}";
+            coinBalanceText.text = $"{newBalance:N0} COINS";
         }
     }
 
@@ -197,7 +203,8 @@ public class LevelSelectionPanel : UIBasePanel
             badgeRect.sizeDelta = new Vector2(56, 26);
 
             TMP_Text badgeTxt = badgeObj.AddComponent<TextMeshProUGUI>();
-            badgeTxt.text = claimed ? "CHEST✓" : "CHEST";
+            BallMergeUITheme.ApplyFont(badgeTxt);
+            badgeTxt.text = claimed ? "CHEST DONE" : "CHEST";
             badgeTxt.fontSize = 13;
             badgeTxt.fontStyle = FontStyles.Bold;
             badgeTxt.alignment = TextAlignmentOptions.Right;
@@ -212,13 +219,14 @@ public class LevelSelectionPanel : UIBasePanel
         labelRect.sizeDelta = new Vector2(160, 50);
 
         TMP_Text labelTxt = labelObj.AddComponent<TextMeshProUGUI>();
-        labelTxt.text = isUnlocked ? $"LVL {levelNum}" : "🔒";
-        labelTxt.fontSize = isUnlocked ? 30 : 36;
+        BallMergeUITheme.ApplyFont(labelTxt);
+        labelTxt.text = isUnlocked ? $"LVL {levelNum}" : "LOCKED";
+        labelTxt.fontSize = isUnlocked ? 30 : 22;
         labelTxt.fontStyle = FontStyles.Bold;
         labelTxt.alignment = TextAlignmentOptions.Center;
         labelTxt.color = isUnlocked ? Color.white : Color.gray;
 
-        // Stars Display (e.g. ⭐⭐⭐)
+        // Stars Display
         GameObject starsObj = new GameObject("StarsText");
         starsObj.transform.SetParent(cardObj.transform, false);
         RectTransform starsRect = starsObj.AddComponent<RectTransform>();
@@ -226,13 +234,9 @@ public class LevelSelectionPanel : UIBasePanel
         starsRect.sizeDelta = new Vector2(160, 35);
 
         TMP_Text starsTxt = starsObj.AddComponent<TextMeshProUGUI>();
-        string starString = "";
-        for (int s = 0; s < 3; s++)
-        {
-            starString += s < stars ? "★ " : "☆ ";
-        }
-        starsTxt.text = isUnlocked ? starString.Trim() : "LOCKED";
-        starsTxt.fontSize = isUnlocked ? 22 : 18;
+        BallMergeUITheme.ApplyFont(starsTxt);
+        starsTxt.text = isUnlocked ? $"{stars} / 3 STARS" : "LOCKED";
+        starsTxt.fontSize = isUnlocked ? 19 : 17;
         starsTxt.alignment = TextAlignmentOptions.Center;
         starsTxt.color = isUnlocked ? new Color(1.0f, 0.85f, 0.2f) : Color.gray;
 
@@ -262,6 +266,7 @@ public class LevelSelectionPanel : UIBasePanel
             hsRect.sizeDelta = new Vector2(160, 25);
 
             TMP_Text hsTxt = hsObj.AddComponent<TextMeshProUGUI>();
+            BallMergeUITheme.ApplyFont(hsTxt);
             hsTxt.text = subLabel;
             hsTxt.fontSize = 17;
             hsTxt.alignment = TextAlignmentOptions.Center;
@@ -281,6 +286,15 @@ public class LevelSelectionPanel : UIBasePanel
         if (GameManager.HasInstance)
         {
             GameManager.Instance.StartGame();
+        }
+    }
+
+    private void OnJumpToCurrentClicked()
+    {
+        EnsureAdventureMap();
+        if (levelMapController != null)
+        {
+            levelMapController.ScrollToCurrentLevel();
         }
     }
 

@@ -14,6 +14,7 @@ public class LevelWinPanel : UIBasePanel
     [Header("Displays")]
     [SerializeField] private TMP_Text titleText;
     [SerializeField] private TMP_Text starsText;
+    [SerializeField] private Image[] starIcons;
     [SerializeField] private TMP_Text scoreText;
     [SerializeField] private TMP_Text dropsUsedText;
     [SerializeField] private TMP_Text coinBonusText;
@@ -54,9 +55,20 @@ public class LevelWinPanel : UIBasePanel
 
         if (starsText != null)
         {
-            string starStr = "";
-            for (int s = 0; s < 3; s++) starStr += s < stars ? "★ " : "☆ ";
-            starsText.text = starStr.Trim();
+            starsText.text = $"{stars} / 3 STARS";
+        }
+
+        if (starIcons != null)
+        {
+            for (int i = 0; i < starIcons.Length; i++)
+            {
+                if (starIcons[i] != null)
+                {
+                    starIcons[i].color = i < stars
+                        ? new Color(1f, 0.9f, 0.22f, 1f)
+                        : new Color(0.22f, 0.26f, 0.35f, 0.65f);
+                }
+            }
         }
 
         if (scoreText != null) scoreText.text = $"FINAL SCORE: {finalScore}";
@@ -93,6 +105,19 @@ public class LevelWinPanel : UIBasePanel
             starsText.transform.localScale = Vector3.zero;
             starsText.transform.DOScale(1f, 0.38f).SetDelay(0.14f).SetEase(Ease.OutBack).SetUpdate(true).SetLink(gameObject);
         }
+
+        if (starIcons != null)
+        {
+            for (int i = 0; i < starIcons.Length; i++)
+            {
+                if (starIcons[i] != null)
+                {
+                    starIcons[i].transform.DOKill();
+                    starIcons[i].transform.localScale = Vector3.zero;
+                    starIcons[i].transform.DOScale(1f, 0.34f).SetDelay(0.14f + i * 0.11f).SetEase(Ease.OutBack).SetUpdate(true).SetLink(gameObject);
+                }
+            }
+        }
     }
 
     public override void OnHide()
@@ -107,7 +132,7 @@ public class LevelWinPanel : UIBasePanel
         if (coinBonusText == null || reward.totalCoinsEarned <= 0) return;
 
         string detail = reward.unusedDrops > 0
-            ? $"Base +{reward.baseLevelCoins}  |  {reward.unusedDrops} Drops × 20 = +{reward.unusedDropsBonusCoins}"
+            ? $"Base +{reward.baseLevelCoins}  |  {reward.unusedDrops} Drops x 20 = +{reward.unusedDropsBonusCoins}"
             : $"Level Reward";
 
         int displayed = 0;
@@ -170,6 +195,10 @@ public class LevelWinPanel : UIBasePanel
         if (scoreText != null && scoreText.font != null)
         {
             coinBonusText.font = scoreText.font;
+        }
+        else
+        {
+            BallMergeUITheme.ApplyFont(coinBonusText);
         }
         coinBonusText.fontSize = 23f;
         coinBonusText.fontStyle = FontStyles.Bold;

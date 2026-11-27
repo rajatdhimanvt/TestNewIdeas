@@ -1,0 +1,140 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a9bf9b0961bbac54499c0130ee412d10, type: 3}
+  m_Name: GeometryMazeLevel_04
+  m_EditorClassIdentifier: 
+  levelNumber: 4
+  levelName: Slider Rush
+  difficultyLabel: HARD
+  modeLabel: 7x10 TRIAL
+  trayInnerSize: {x: 7.6, y: 11.6}
+  trayColor: {r: 0.84, g: 0.83, b: 0.97, a: 1}
+  outerFrameColor: {r: 0.32, g: 0.28, b: 0.64, a: 1}
+  wallColor: {r: 0.96, g: 0.96, b: 1, a: 1}
+  threeStarTime: 30
+  twoStarTime: 48
+  timeTrialLimit: 65
+  startPosition: {x: -3.2571428, y: -5.2200003}
+  goalPosition: {x: -2.1714287, y: 4.0600004}
+  ballRadius: 0.23
+  walls:
+  - position: {x: -2.7142859, y: -4.6400003}
+    size: {x: 0.16, y: 2.4800003}
+    rotationDeg: 0
+  - position: {x: -2.7142859, y: 2.9000006}
+    size: {x: 0.16, y: 3.6400003}
+    rotationDeg: 0
+  - position: {x: -1.6285715, y: -4.06}
+    size: {x: 0.16, y: 1.32}
+    rotationDeg: 0
+  - position: {x: -1.6285715, y: -1.7399999}
+    size: {x: 0.16, y: 1.32}
+    rotationDeg: 0
+  - position: {x: -1.6285715, y: 3.4800005}
+    size: {x: 0.16, y: 4.8}
+    rotationDeg: 0
+  - position: {x: -0.5428573, y: -2.9}
+    size: {x: 0.16, y: 1.32}
+    rotationDeg: 0
+  - position: {x: -0.5428573, y: 3.4800005}
+    size: {x: 0.16, y: 2.4800003}
+    rotationDeg: 0
+  - position: {x: 0.54285693, y: -4.6400003}
+    size: {x: 0.16, y: 2.4800003}
+    rotationDeg: 0
+  - position: {x: 0.54285693, y: 1.1600003}
+    size: {x: 0.16, y: 2.4800003}
+    rotationDeg: 0
+  - position: {x: 1.6285712, y: -3.48}
+    size: {x: 0.16, y: 2.4800003}
+    rotationDeg: 0
+  - position: {x: 1.6285712, y: 0.00000023841858}
+    size: {x: 0.16, y: 2.4800003}
+    rotationDeg: 0
+  - position: {x: 1.6285712, y: 3.4800005}
+    size: {x: 0.16, y: 2.4800003}
+    rotationDeg: 0
+  - position: {x: 2.7142854, y: -2.32}
+    size: {x: 0.16, y: 2.4800003}
+    rotationDeg: 0
+  - position: {x: -0.00000017881393, y: -4.6400003}
+    size: {x: 1.2457142, y: 0.16}
+    rotationDeg: 0
+  - position: {x: 2.1714282, y: -4.6400003}
+    size: {x: 1.2457142, y: 0.16}
+    rotationDeg: 0
+  - position: {x: -1.6285715, y: -3.48}
+    size: {x: 2.3314285, y: 0.16}
+    rotationDeg: 0
+  - position: {x: -2.7142859, y: -2.32}
+    size: {x: 2.3314285, y: 0.16}
+    rotationDeg: 0
+  - position: {x: 0.54285693, y: -2.32}
+    size: {x: 2.3314285, y: 0.16}
+    rotationDeg: 0
+  - position: {x: -3.2571428, y: -1.1599998}
+    size: {x: 1.2457142, y: 0.16}
+    rotationDeg: 0
+  - position: {x: 0.54285693, y: -1.1599998}
+    size: {x: 4.5028567, y: 0.16}
+    rotationDeg: 0
+  - position: {x: -1.0857143, y: 0.00000023841858}
+    size: {x: 3.4171426, y: 0.16}
+    rotationDeg: 0
+  - position: {x: 3.2571425, y: 0.00000023841858}
+    size: {x: 1.2457142, y: 0.16}
+    rotationDeg: 0
+  - position: {x: -1.6285715, y: 1.1600003}
+    size: {x: 2.3314285, y: 0.16}
+    rotationDeg: 0
+  - position: {x: 1.6285712, y: 1.1600003}
+    size: {x: 2.3314285, y: 0.16}
+    rotationDeg: 0
+  - position: {x: -0.00000017881393, y: 2.3200004}
+    size: {x: 1.2457142, y: 0.16}
+    rotationDeg: 0
+  - position: {x: 2.7142854, y: 2.3200004}
+    size: {x: 2.3314285, y: 0.16}
+    rotationDeg: 0
+  - position: {x: 1.0857141, y: 3.4800005}
+    size: {x: 1.2457142, y: 0.16}
+    rotationDeg: 0
+  - position: {x: 3.2571425, y: 3.4800005}
+    size: {x: 1.2457142, y: 0.16}
+    rotationDeg: 0
+  - position: {x: -0.00000017881393, y: 4.6400003}
+    size: {x: 1.2457142, y: 0.16}
+    rotationDeg: 0
+  - position: {x: 2.1714282, y: 4.6400003}
+    size: {x: 1.2457142, y: 0.16}
+    rotationDeg: 0
+  holes:
+  - position: {x: -2.1714287, y: -3.8862858}
+    radius: 0.27142856
+  - position: {x: -2.1714287, y: 1.5662861}
+    radius: 0.27142856
+  obstacles:
+  - isSpinner: 0
+    startPosition: {x: 2.0411425, y: -4.06}
+    endPosition: {x: 3.3874283, y: -4.06}
+    size: {x: 0.62971425, y: 0.16799998}
+    speed: 1.55
+  bonusPins:
+  - {x: 1.0857141, y: 0.5800003}
+  - {x: 3.2571425, y: 2.9000006}
+  - {x: -0.00000017881393, y: -5.2200003}
+  eraserBumpers:
+  - position: {x: -3.4091427, y: -1.7399999}
+    size: {x: 0.67314285, y: 0.23200001}
+    rotationDeg: -28
+    bounceForce: 8.2
+  switchGates: []

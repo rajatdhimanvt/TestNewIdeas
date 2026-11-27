@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -404,7 +405,9 @@ public class LevelMapController : MonoBehaviour
         RectTransform rt = nodeObj.AddComponent<RectTransform>();
         rt.sizeDelta = nodeSize;
 
-        Sprite circleSprite = nodeBackgroundSprite != null ? nodeBackgroundSprite : GetDefaultCircleSprite();
+        Sprite circleSprite = nodeBackgroundSprite != null
+            ? nodeBackgroundSprite
+            : (BallMergeUITheme.GetCircleSprite() != null ? BallMergeUITheme.GetCircleSprite() : GetDefaultCircleSprite());
 
         // Outer Glow / Ring
         GameObject ringObj = new GameObject("Ring");
@@ -412,11 +415,16 @@ public class LevelMapController : MonoBehaviour
         RectTransform ringRt = ringObj.AddComponent<RectTransform>();
         ringRt.anchorMin = Vector2.zero;
         ringRt.anchorMax = Vector2.one;
-        ringRt.sizeDelta = new Vector2(16f, 16f);
+        ringRt.sizeDelta = isCurrent ? new Vector2(22f, 22f) : new Vector2(16f, 16f);
         Image ringImg = ringObj.AddComponent<Image>();
         ringImg.sprite = circleSprite;
         ringImg.color = isCurrent ? new Color(1f, 0.9f, 0.35f, 0.95f) : new Color(0f, 0f, 0f, 0.38f);
         ringImg.raycastTarget = false;
+
+        if (isCurrent && Application.isPlaying)
+        {
+            ringRt.DOScale(1.1f, 0.7f).SetLoops(-1, LoopType.Yoyo).SetEase(Ease.InOutSine).SetUpdate(true).SetLink(ringObj);
+        }
 
         // Main Button Background
         Image bgImg = nodeObj.AddComponent<Image>();
@@ -427,6 +435,20 @@ public class LevelMapController : MonoBehaviour
             bgImg.color = unlockedColor;
         else
             bgImg.color = lockedColor;
+
+        // Top-left glossy specular highlight
+        if (isUnlocked)
+        {
+            GameObject shineObj = new GameObject("Shine");
+            shineObj.transform.SetParent(nodeObj.transform, false);
+            RectTransform shineRt = shineObj.AddComponent<RectTransform>();
+            shineRt.anchoredPosition = new Vector2(-nodeSize.x * 0.22f, nodeSize.y * 0.22f);
+            shineRt.sizeDelta = new Vector2(nodeSize.x * 0.24f, nodeSize.y * 0.24f);
+            Image shineImg = shineObj.AddComponent<Image>();
+            shineImg.sprite = circleSprite;
+            shineImg.color = new Color(1f, 1f, 1f, 0.42f);
+            shineImg.raycastTarget = false;
+        }
 
         Button btn = nodeObj.AddComponent<Button>();
         btn.targetGraphic = bgImg;
@@ -440,9 +462,10 @@ public class LevelMapController : MonoBehaviour
         textRt.anchorMin = Vector2.zero;
         textRt.anchorMax = Vector2.one;
         textRt.sizeDelta = Vector2.zero;
-        textRt.anchoredPosition = new Vector2(0, isUnlocked ? 8f : 0f);
+        textRt.anchoredPosition = new Vector2(0, isUnlocked ? 10f : 0f);
 
         TextMeshProUGUI tmp = textObj.AddComponent<TextMeshProUGUI>();
+        BallMergeUITheme.ApplyFont(tmp);
         tmp.text = isUnlocked ? levelNum.ToString() : "LOCK";
         tmp.fontSize = isUnlocked ? (levelNum >= 100 ? 34 : 42) : 22;
         tmp.fontStyle = FontStyles.Bold;
@@ -450,28 +473,8 @@ public class LevelMapController : MonoBehaviour
         tmp.color = Color.white;
         tmp.raycastTarget = false;
 
-        // Stars display (for unlocked levels)
-        GameObject starsObj = new GameObject("Stars");
-        starsObj.transform.SetParent(nodeObj.transform, false);
-        RectTransform starsRt = starsObj.AddComponent<RectTransform>();
-        starsRt.anchorMin = new Vector2(0.5f, 0f);
-        starsRt.anchorMax = new Vector2(0.5f, 0f);
-        starsRt.pivot = new Vector2(0.5f, 0f);
-        starsRt.anchoredPosition = new Vector2(0, 10f);
-        starsRt.sizeDelta = new Vector2(110f, 24f);
-
-        TextMeshProUGUI starsTmp = starsObj.AddComponent<TextMeshProUGUI>();
-        string starStr = "";
-        for (int s = 0; s < 3; s++)
-        {
-            starStr += s < stars ? "★" : "☆";
-        }
-        starsTmp.text = isUnlocked ? starStr : "";
-        starsTmp.fontSize = 18;
-        starsTmp.alignment = TextAlignmentOptions.Center;
-        starsTmp.color = new Color(1f, 0.9f, 0.2f);
-        starsTmp.raycastTarget = false;
-        starsObj.SetActive(isUnlocked);
+        // Visual 5-point Star Icons (no missing font glyphs)
+        ApplyNodeStarsVisual(nodeObj.transform, isUnlocked, stars);
 
         // Top tag: Milestone Chest (every 5 levels) or Block Stage count
         RefreshNodeBadge(nodeObj, levelNum, isUnlocked);
@@ -484,10 +487,16 @@ public class LevelMapController : MonoBehaviour
         Transform ringTf = nodeObj.transform.Find("Ring");
         if (ringTf != null)
         {
+            ringTf.DOKill();
+            ringTf.localScale = Vector3.one;
             Image ringImg = ringTf.GetComponent<Image>();
             if (ringImg != null)
             {
                 ringImg.color = isCurrent ? new Color(1f, 0.9f, 0.35f, 0.95f) : new Color(0f, 0f, 0f, 0.38f);
+            }
+            if (isCurrent && Application.isPlaying)
+            {
+                ringTf.DOScale(1.1f, 0.7f).SetLoops(-1, LoopType.Yoyo).SetEase(Ease.InOutSine).SetUpdate(true).SetLink(ringTf.gameObject);
             }
         }
 
@@ -510,6 +519,7 @@ public class LevelMapController : MonoBehaviour
         TextMeshProUGUI[] texts = nodeObj.GetComponentsInChildren<TextMeshProUGUI>(true);
         foreach (var t in texts)
         {
+            BallMergeUITheme.ApplyFont(t);
             string lower = t.gameObject.name.ToLower();
             if (lower.Contains("number") || lower.Contains("level") || lower.Contains("label") || texts.Length == 1)
             {
@@ -518,14 +528,62 @@ public class LevelMapController : MonoBehaviour
             }
             else if (lower.Contains("star"))
             {
-                t.gameObject.SetActive(isUnlocked);
-                string starStr = "";
-                for (int s = 0; s < 3; s++) starStr += s < stars ? "★" : "☆";
-                t.text = isUnlocked ? starStr : "";
+                t.gameObject.SetActive(false);
             }
         }
 
+        ApplyNodeStarsVisual(nodeObj.transform, isUnlocked, stars);
         RefreshNodeBadge(nodeObj, levelNum, isUnlocked);
+    }
+
+    private void ApplyNodeStarsVisual(Transform nodeTransform, bool isUnlocked, int stars)
+    {
+        Transform starsRowTf = nodeTransform.Find("StarIcons");
+        if (!isUnlocked)
+        {
+            if (starsRowTf != null) starsRowTf.gameObject.SetActive(false);
+            return;
+        }
+
+        Sprite starSprite = BallMergeUITheme.GetStarSprite();
+        GameObject rowObj;
+        if (starsRowTf == null)
+        {
+            rowObj = new GameObject("StarIcons");
+            rowObj.transform.SetParent(nodeTransform, false);
+            RectTransform rowRt = rowObj.AddComponent<RectTransform>();
+            rowRt.anchorMin = new Vector2(0.5f, 0f);
+            rowRt.anchorMax = new Vector2(0.5f, 0f);
+            rowRt.pivot = new Vector2(0.5f, 0f);
+            rowRt.anchoredPosition = new Vector2(0f, 10f);
+            rowRt.sizeDelta = new Vector2(96f, 26f);
+
+            for (int i = 0; i < 3; i++)
+            {
+                GameObject sObj = new GameObject($"Star_{i}");
+                sObj.transform.SetParent(rowObj.transform, false);
+                RectTransform srt = sObj.AddComponent<RectTransform>();
+                srt.anchoredPosition = new Vector2((i - 1) * 26f, i == 1 ? 3f : 0f);
+                srt.sizeDelta = i == 1 ? new Vector2(22f, 22f) : new Vector2(19f, 19f);
+                Image img = sObj.AddComponent<Image>();
+                img.sprite = starSprite;
+                img.raycastTarget = false;
+            }
+        }
+        else
+        {
+            rowObj = starsRowTf.gameObject;
+            rowObj.SetActive(true);
+        }
+
+        for (int i = 0; i < 3 && i < rowObj.transform.childCount; i++)
+        {
+            Image sImg = rowObj.transform.GetChild(i).GetComponent<Image>();
+            if (sImg != null)
+            {
+                sImg.color = i < stars ? new Color(1f, 0.9f, 0.22f, 1f) : new Color(0.14f, 0.17f, 0.24f, 0.55f);
+            }
+        }
     }
 
     private void RefreshNodeBadge(GameObject nodeObj, int levelNum, bool isUnlocked)
@@ -539,7 +597,7 @@ public class LevelMapController : MonoBehaviour
 
         if (isMilestone)
         {
-            badgeText = chestClaimed ? "CHEST ✓" : "CHEST";
+            badgeText = chestClaimed ? "CHEST DONE" : "CHEST";
             badgeColor = chestClaimed ? new Color(0.55f, 0.92f, 0.58f) : new Color(1f, 0.85f, 0.22f);
         }
         else if (isUnlocked)
@@ -589,6 +647,7 @@ public class LevelMapController : MonoBehaviour
             trt.offsetMax = Vector2.zero;
 
             tmp = txtObj.AddComponent<TextMeshProUGUI>();
+            BallMergeUITheme.ApplyFont(tmp);
             tmp.fontSize = 15f;
             tmp.fontStyle = FontStyles.Bold;
             tmp.alignment = TextAlignmentOptions.Center;
@@ -603,6 +662,7 @@ public class LevelMapController : MonoBehaviour
 
         if (tmp != null)
         {
+            BallMergeUITheme.ApplyFont(tmp);
             tmp.text = badgeText;
             tmp.color = badgeColor;
         }

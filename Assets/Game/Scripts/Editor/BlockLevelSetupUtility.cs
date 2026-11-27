@@ -36,8 +36,8 @@ public static class BlockLevelSetupUtility
     private static void AutoInitializeBlockSystemOnce()
     {
         if (EditorApplication.isPlayingOrWillChangePlaymode) return;
-        if (SessionState.GetBool("BallMerge_BlockInitV5Checked", false)) return;
-        SessionState.SetBool("BallMerge_BlockInitV5Checked", true);
+        if (SessionState.GetBool("BallMerge_BlockInitV7Checked", false)) return;
+        SessionState.SetBool("BallMerge_BlockInitV7Checked", true);
 
         BlockLibrarySO existingLib = AssetDatabase.LoadAssetAtPath<BlockLibrarySO>(BLOCK_LIBRARY_PATH);
         bool needsUpgrade = existingLib == null
@@ -54,6 +54,11 @@ public static class BlockLevelSetupUtility
             GenerateAllBlockAssetsAndSampleLevels();
         }
 
+        if (!File.Exists(BallMergeAssetCreator.LILITA_FONT_ASSET_PATH))
+        {
+            BallMergeAssetCreator.EnsureLilitaOneFontAsset();
+        }
+
         Scene activeScene = SceneManager.GetActiveScene();
         if (activeScene.path == BLOCK_TESTING_SCENE_PATH && !activeScene.isDirty &&
             (UnityEngine.Object.FindAnyObjectByType<BlockTestingController>() == null
@@ -62,9 +67,23 @@ public static class BlockLevelSetupUtility
         {
             SetupBlockTestingScene();
         }
-        else if (activeScene.path == GAME_TEST_SCENE_PATH && !activeScene.isDirty && NeedsGameTestUpgrade())
+        else if (activeScene.path == GAME_TEST_SCENE_PATH && !activeScene.isDirty)
         {
-            UpgradeGameTestSceneInternal(saveScene: true);
+            bool upgraded = false;
+            if (NeedsGameTestUpgrade())
+            {
+                UpgradeGameTestSceneInternal(saveScene: false);
+                upgraded = true;
+            }
+
+            if (NeedsGameTestUIPolish())
+            {
+                BallMergeAssetCreator.ApplyProUIPolishToActiveSceneAndPrefabs(saveScene: true);
+            }
+            else if (upgraded)
+            {
+                EditorSceneManager.SaveScene(activeScene);
+            }
         }
     }
 
@@ -783,7 +802,7 @@ public static class BlockLevelSetupUtility
         Image card = CreateSlicedImage(overlay.gameObject, "ResultCard", Vector2.zero, new Vector2(820, 690),
             spFrameBlue, new Color(0.13f, 0.16f, 0.23f, 1f));
         TMP_Text resTitle = CreateUIText(card.gameObject, "ResultTitle", "LEVEL CLEARED!", new Vector2(0, 250), new Vector2(740, 82), 52, new Color(0.25f, 0.95f, 0.55f), TextAlignmentOptions.Center);
-        TMP_Text resStars = CreateUIText(card.gameObject, "ResultStars", "★ ★ ★", new Vector2(0, 175), new Vector2(700, 66), 48, new Color(1.0f, 0.86f, 0.24f), TextAlignmentOptions.Center);
+        TMP_Text resStars = CreateUIText(card.gameObject, "ResultStars", "3 / 3 STARS", new Vector2(0, 175), new Vector2(700, 66), 44, new Color(1.0f, 0.86f, 0.24f), TextAlignmentOptions.Center);
         TMP_Text resSub = CreateUIText(card.gameObject, "ResultSubtitle", "Score: 0", new Vector2(0, 102), new Vector2(740, 54), 27, Color.white, TextAlignmentOptions.Center);
         TMP_Text resCoins = CreateUIText(card.gameObject, "ResultCoinBonusText", "+0 COINS EARNED!", new Vector2(0, 22), new Vector2(760, 84), 26, new Color(1.0f, 0.88f, 0.28f), TextAlignmentOptions.Center);
         Button resNext = CreateStyledButton(card.gameObject, "ResultNextButton", "NEXT LEVEL", new Vector2(0, -120), new Vector2(440, 92), spBtnGreen, new Color(0.18f, 0.78f, 0.44f));
@@ -930,6 +949,37 @@ public static class BlockLevelSetupUtility
         }
 
         UpgradeGameTestSceneInternal(saveScene: true);
+    }
+
+    private static bool NeedsGameTestUIPolish()
+    {
+        if (!File.Exists(BallMergeAssetCreator.LILITA_FONT_ASSET_PATH)) return true;
+
+        SettingsPanel sp = UnityEngine.Object.FindAnyObjectByType<SettingsPanel>(FindObjectsInactive.Include);
+        if (sp != null)
+        {
+            SerializedObject spSo = new SerializedObject(sp);
+            SerializedProperty masterProp = spSo.FindProperty("masterVolumeSlider");
+            if (masterProp != null && masterProp.objectReferenceValue == null) return true;
+        }
+
+        LevelSelectionPanel lp = UnityEngine.Object.FindAnyObjectByType<LevelSelectionPanel>(FindObjectsInactive.Include);
+        if (lp != null)
+        {
+            SerializedObject lpSo = new SerializedObject(lp);
+            SerializedProperty jumpProp = lpSo.FindProperty("jumpToCurrentButton");
+            if (jumpProp != null && jumpProp.objectReferenceValue == null) return true;
+        }
+
+        MainMenuPanel mm = UnityEngine.Object.FindAnyObjectByType<MainMenuPanel>(FindObjectsInactive.Include);
+        if (mm != null)
+        {
+            SerializedObject mmSo = new SerializedObject(mm);
+            SerializedProperty swProp = mmSo.FindProperty("switchGameButton");
+            if (swProp != null && swProp.objectReferenceValue == null) return true;
+        }
+
+        return false;
     }
 
     private static bool NeedsGameTestUpgrade()

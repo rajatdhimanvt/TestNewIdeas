@@ -87,7 +87,7 @@ public class ThemeShopPanel : UIBasePanel
         {
             if (isEquipped) txt.text = "APPLIED";
             else if (isUnlocked) txt.text = "APPLY";
-            else txt.text = $"🔒 UNLOCK\n({coinCost} 🪙)";
+            else txt.text = $"UNLOCK\n{coinCost} COINS";
         }
     }
 
@@ -145,7 +145,7 @@ public class ThemeShopPanel : UIBasePanel
     {
         if (coinBalanceText != null)
         {
-            coinBalanceText.text = $"🪙 {coins:N0} COINS";
+            coinBalanceText.text = $"{coins:N0} COINS";
         }
     }
 }

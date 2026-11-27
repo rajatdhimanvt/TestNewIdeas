@@ -83,6 +83,7 @@ public class GameplayHUDPanel : UIBasePanel
         TMP_Text tmp = txtObj.AddComponent<TextMeshProUGUI>();
         if (dropsText != null && dropsText.font != null) tmp.font = dropsText.font;
         else if (scoreText != null && scoreText.font != null) tmp.font = scoreText.font;
+        else BallMergeUITheme.ApplyFont(tmp);
         tmp.text = "BLOCKS: 0 / 0";
         tmp.fontSize = 26f;
         tmp.fontStyle = FontStyles.Bold;
@@ -181,11 +182,20 @@ public class GameplayHUDPanel : UIBasePanel
         }
     }
 
+    private int lastDisplayedScore = -1;
+
     private void UpdateScore(int score)
     {
         if (scoreText != null)
         {
-            scoreText.text = score.ToString();
+            scoreText.text = score.ToString("N0");
+            if (score > lastDisplayedScore && lastDisplayedScore >= 0)
+            {
+                scoreText.transform.DOKill();
+                scoreText.transform.localScale = Vector3.one;
+                scoreText.transform.DOPunchScale(Vector3.one * 0.14f, 0.16f, 6, 0.5f).SetLink(scoreText.gameObject);
+            }
+            lastDisplayedScore = score;
         }
     }
 

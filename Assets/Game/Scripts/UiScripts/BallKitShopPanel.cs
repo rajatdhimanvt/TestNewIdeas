@@ -83,7 +83,7 @@ public class BallKitShopPanel : UIBasePanel
         {
             if (isEquipped) txt.text = "EQUIPPED";
             else if (isUnlocked) txt.text = "EQUIP";
-            else txt.text = $"🔒 UNLOCK\n({coinCost} 🪙)";
+            else txt.text = $"UNLOCK\n{coinCost} COINS";
         }
     }
 
@@ -141,7 +141,7 @@ public class BallKitShopPanel : UIBasePanel
     {
         if (coinBalanceText != null)
         {
-            coinBalanceText.text = $"🪙 {coins:N0} COINS";
+            coinBalanceText.text = $"{coins:N0} COINS";
         }
     }
 }

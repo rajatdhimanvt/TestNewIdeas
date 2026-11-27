@@ -11,5 +11,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/RaftRumble/Scene/RaftRumble.unity
     guid: 2dd0c744edbf20a47ab8e4aa389c15f7
+  - enabled: 1
+    path: Assets/GeometryBoxMaze/Scenes/GeometryBoxMaze.unity
+    guid: 83d2441a2caf4824aad4da9fbfab7fd8
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
+  m_UseUCBPForAssetBundles: 0

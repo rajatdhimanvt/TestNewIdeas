@@ -311,6 +311,7 @@ public class MilestoneChestModal : MonoBehaviour
         rt.anchoredPosition = pos;
         rt.sizeDelta = size;
         TMP_Text tmp = obj.AddComponent<TextMeshProUGUI>();
+        BallMergeUITheme.ApplyFont(tmp);
         tmp.text = content;
         tmp.fontSize = fontSize;
         tmp.fontStyle = FontStyles.Bold;

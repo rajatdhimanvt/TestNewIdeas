@@ -47,7 +47,7 @@ public class DailyRewardPanel : UIBasePanel
         new SpinSegment("100 COINS", 100, 60f, 120f),
         new SpinSegment("200 COINS", 200, 120f, 180f),
         new SpinSegment("500 COINS", 500, 180f, 240f),
-        new SpinSegment("🎰 1,000 JACKPOT", 1000, 240f, 300f),
+        new SpinSegment("1,000 JACKPOT!", 1000, 240f, 300f),
         new SpinSegment("150 COINS", 150, 300f, 360f)
     };
 
@@ -90,7 +90,7 @@ public class DailyRewardPanel : UIBasePanel
 
         if (streakDayText != null)
         {
-            streakDayText.text = $"DAY {nextStreakDay} REWARD: 🪙 {dayCoins}";
+            streakDayText.text = $"DAY {nextStreakDay} REWARD: +{dayCoins} COINS";
         }
 
         bool canClaimStreak = PlayerDataManager.Instance.CanClaimDailyReward();
@@ -108,7 +108,7 @@ public class DailyRewardPanel : UIBasePanel
         bool canFreeSpin = PlayerDataManager.Instance.CanFreeSpin();
         if (spinButtonText != null)
         {
-            spinButtonText.text = canFreeSpin ? "FREE SPIN!" : "SPIN (100 🪙)";
+            spinButtonText.text = canFreeSpin ? "FREE SPIN!" : "SPIN (100 COINS)";
         }
 
         if (statusText != null)
@@ -206,6 +206,7 @@ public class DailyRewardPanel : UIBasePanel
 
         // Award Coin Prize
         PlayerDataManager.Instance.AddCoins(winningSegment.coinReward);
+        GameEvents.OnPlaySFX?.Invoke("ChestOpen");
 
         yield return new WaitForSeconds(0.3f);
 
@@ -216,7 +217,7 @@ public class DailyRewardPanel : UIBasePanel
 
         if (uiManager != null)
         {
-            uiManager.ShowPopup("🎉 CONGRATULATIONS!", $"You won {winningSegment.label} from the Lucky Wheel!");
+            uiManager.ShowPopup("JACKPOT WINNER!", $"You won {winningSegment.label} from the Lucky Wheel!");
         }
     }
 

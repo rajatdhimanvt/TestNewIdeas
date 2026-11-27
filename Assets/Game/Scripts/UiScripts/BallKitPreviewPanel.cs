@@ -123,6 +123,7 @@ public class BallKitPreviewPanel : UIBasePanel
         dotRect.anchoredPosition = new Vector2(-320, 0);
         dotRect.sizeDelta = new Vector2(50, 50);
         Image dotImg = dotObj.AddComponent<Image>();
+        dotImg.sprite = BallMergeUITheme.GetCircleSprite();
         dotImg.color = data.ballColor;
 
         // Tier Title & Name
@@ -132,6 +133,7 @@ public class BallKitPreviewPanel : UIBasePanel
         titleRect.anchoredPosition = new Vector2(-80, 15);
         titleRect.sizeDelta = new Vector2(380, 40);
         TMP_Text titleTxt = titleObj.AddComponent<TextMeshProUGUI>();
+        BallMergeUITheme.ApplyFont(titleTxt);
         titleTxt.text = $"T{data.tier + 1}: {data.ballName}";
         titleTxt.fontSize = 28;
         titleTxt.fontStyle = FontStyles.Bold;
@@ -144,6 +146,7 @@ public class BallKitPreviewPanel : UIBasePanel
         subRect.anchoredPosition = new Vector2(-80, -20);
         subRect.sizeDelta = new Vector2(380, 30);
         TMP_Text subTxt = subObj.AddComponent<TextMeshProUGUI>();
+        BallMergeUITheme.ApplyFont(subTxt);
         subTxt.text = $"Score: +{data.scoreValue} Pts  •  Radius: {data.radius:F2}";
         subTxt.fontSize = 20;
         subTxt.color = Color.gray;
@@ -156,7 +159,8 @@ public class BallKitPreviewPanel : UIBasePanel
         badgeRect.anchoredPosition = new Vector2(240, 0);
         badgeRect.sizeDelta = new Vector2(200, 40);
         TMP_Text badgeTxt = badgeObj.AddComponent<TextMeshProUGUI>();
-        badgeTxt.text = isDroppable ? "✔ DROPPABLE" : "★ MERGE ONLY";
+        BallMergeUITheme.ApplyFont(badgeTxt);
+        badgeTxt.text = isDroppable ? "DROPPABLE" : "MERGE ONLY";
         badgeTxt.fontSize = 20;
         badgeTxt.fontStyle = FontStyles.Bold;
         badgeTxt.alignment = TextAlignmentOptions.Right;
